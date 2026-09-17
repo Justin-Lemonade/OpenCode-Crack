@@ -37,10 +37,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from agent_orchestrator.orchestrator import timestamps
-from agent_orchestrator.orchestrator.task_board import BOARD_PATH
-from agent_orchestrator.runtime import control_db
-from agent_orchestrator.runtime.control_db import CONTROL_DB_PATH
+from opencode_crack.orchestrator import timestamps
+from opencode_crack.orchestrator.task_board import BOARD_PATH
+from opencode_crack.runtime import control_db
+from opencode_crack.runtime.control_db import CONTROL_DB_PATH
 
 
 def _parse_ts(value: Optional[str]) -> Optional[datetime]:

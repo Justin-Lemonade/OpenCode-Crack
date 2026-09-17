@@ -758,13 +758,13 @@ class TestAvoidFakeTests:
     
     def test_not_mocking_concurrency(self):
         """Ensure concurrency tests measure real parallelism, not mock."""
-        from scripts.opencode_parent_child_experiment import peak_overlap
+        from opencode_crack.scripts.opencode_parent_child_experiment import peak_overlap
 
         assert peak_overlap([(0.0, 1.0), (0.5, 1.5)]) == 2
     
     def test_not_assuming_sequential_is_parallel(self):
         """Don't claim parallelism just because sessions were created."""
-        from scripts.opencode_parent_child_experiment import peak_overlap
+        from opencode_crack.scripts.opencode_parent_child_experiment import peak_overlap
 
         assert peak_overlap([(0.0, 1.0), (1.0, 2.0)]) == 1
 

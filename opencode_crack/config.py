@@ -9,7 +9,7 @@ and other domain/provider config this package has no business knowing
 about.
 
 NOTE for whoever finalizes the repo layout: _PROJECT_ROOT assumes this
-file sits one level below the repo root (e.g. `agent_orchestrator/config.py`
+file sits one level below the repo root (e.g. `opencode_crack/config.py`
 with data/ and .swarm/ as repo-root-level directories). Adjust the
 .parent chain if the final package layout differs (e.g. src-layout).
 """

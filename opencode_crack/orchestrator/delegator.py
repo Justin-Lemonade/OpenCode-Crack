@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from agent_orchestrator.orchestrator.task_board import Task
+from opencode_crack.orchestrator.task_board import Task
 
 # Repo root: <root>/src/orchestrator/delegator.py -> <root>
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -45,11 +45,11 @@ def _get_relevant_knowledge_for_task(task: Task, limit: int = 5) -> list:
     caller's job (CLI ``contract`` / ``dispatcher`` do it) so contract
     builders stay byte-for-byte deterministic.
     """
-    from agent_orchestrator.orchestrator import durable_knowledge as dk
+    from opencode_crack.orchestrator import durable_knowledge as dk
 
     # Try to get the section text for more targeted search
     try:
-        from agent_orchestrator.orchestrator.task_parser import get_section_text
+        from opencode_crack.orchestrator.task_parser import get_section_text
         section_text = get_section_text(task.id)
     except (ValueError, Exception):
         section_text = ""
@@ -91,9 +91,9 @@ def _get_relevant_board_knowledge(task: Task, limit: int = 5) -> list:
     defers that to the caller) because ``search_relevant`` always records
     on every call by design -- see its docstring.
     """
-    from agent_orchestrator.orchestrator import knowledge_board as kb
+    from opencode_crack.orchestrator import knowledge_board as kb
     try:
-        from agent_orchestrator.orchestrator.task_parser import get_section_text
+        from opencode_crack.orchestrator.task_parser import get_section_text
         section_text = get_section_text(task.id)
     except (ValueError, Exception):
         section_text = ""
@@ -149,14 +149,14 @@ def build_contract(task: Task, allowed_paths: str = "as scoped below",
     evidence — not just IDs) into the contract, so the agent gets project
     context without loading the entire knowledge database.
     """
-    from agent_orchestrator.orchestrator.task_parser import get_section_text
+    from opencode_crack.orchestrator.task_parser import get_section_text
     try:
         section_text = get_section_text(task.id)
     except ValueError:
         section_text = "(Section text unavailable — see iteration improvement ideas.md directly.)"
 
     # Retrieve relevant durable knowledge (content, budgeted — not ID-only).
-    from agent_orchestrator.orchestrator import durable_knowledge as dk
+    from opencode_crack.orchestrator import durable_knowledge as dk
     relevant_knowledge = _get_relevant_knowledge_for_task(task)
     knowledge_section = ""
     if relevant_knowledge:
@@ -427,13 +427,13 @@ def compact_contract_fields(task: Task, allowed_paths: str = "as scoped below",
     (verbatim the same lines the full contract's knowledge block carries,
     so the compact form stays a strict subset of the full form).
     """
-    from agent_orchestrator.orchestrator.task_parser import get_section_text
+    from opencode_crack.orchestrator.task_parser import get_section_text
     try:
         section_text = get_section_text(task.id)
     except ValueError:
         section_text = ""
     parsed = _parse_section(section_text, task.id)
-    from agent_orchestrator.orchestrator import durable_knowledge as dk
+    from opencode_crack.orchestrator import durable_knowledge as dk
     knowledge_cards = []
     for scored in _get_relevant_knowledge_for_task(task, limit=3):
         entry = scored.entry
@@ -476,7 +476,7 @@ def build_compact_contract(task: Task, allowed_paths: str = "as scoped below",
     the full contract duplicates. Carries the same durable-knowledge
     one-liners the full contract carries (no detail lines), so every line
     here also appears in the full form."""
-    from agent_orchestrator.orchestrator import durable_knowledge as dk
+    from opencode_crack.orchestrator import durable_knowledge as dk
     f = compact_contract_fields(task, allowed_paths, forbidden_paths)
     lines = [
         f"# {f['task_id']} — {f['title']}",
