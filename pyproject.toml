@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opencode-crack"
+version = "0.1.0"
+description = "Local-first, git-based multi-agent task orchestration framework: task board, knowledge board, concerns board, agent runtime, and a delegator/dispatcher that routes work to any CLI-invocable model backend."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+orchestrate = "opencode_crack.orchestrator.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["opencode_crack*"]

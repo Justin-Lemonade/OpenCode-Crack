@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Env
+.env
+.env.local
+
+# Runtime state this framework generates (per config.py defaults)
+data/control.db
+data/control.db-journal
+data/control.db-wal
+data/control.db-shm
+.swarm/
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Board-generated dashboards (regenerated on sync — same convention
+# as AI-Brain's STATUS.md: don't hand-edit or commit stale copies)
+STATUS.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp

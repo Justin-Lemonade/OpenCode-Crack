@@ -1,0 +1,16 @@
+# Derived directly from a grep audit of every import in orchestrator/,
+# runtime/, tools/, prompts/, and storage/migrations.py (C-076 extraction).
+# Everything else those modules use is Python standard library
+# (argparse, sqlite3, subprocess, dataclasses, pathlib, etc.) — model
+# backends are invoked by shelling out via subprocess, not SDK calls,
+# which is why no anthropic/openai/etc. package is needed here even
+# though the delegator routes work to those backends.
+
+# Task/knowledge/concerns board state (tasks.yaml, config files)
+pyyaml>=6.0
+
+# config.py loads .env for CONTROL_DB_PATH / OPENCODE_BASE_URL / etc.
+python-dotenv>=1.0.0
+
+# Testing
+pytest>=8.0.0
