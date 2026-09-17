@@ -1,5 +1,5 @@
 """
-AI-Brain runtime layer — OpenCode integration (Phase B).
+Runtime layer — OpenCode integration.
 
 See OPEN_CODE_SWARM_INTEGRATION_PLAN.md and docs/opencode_phase_a_findings.md
 for architecture decisions and state ownership mapping.

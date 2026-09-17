@@ -176,7 +176,7 @@ def run_orchestrate(argv: list[str]) -> None:
     c_show = concern_sub.add_parser("show", help="Print the full write-up for one concern")
     c_show.add_argument("concern_id")
 
-    c_board = concern_sub.add_parser("board", help="Print the CONCERNS_BOARD.md dashboard")
+    concern_sub.add_parser("board", help="Print the CONCERNS_BOARD.md dashboard")
 
     c_ack = concern_sub.add_parser("acknowledge", help="Confirm a concern has been seen (open -> acknowledged)")
     c_ack.add_argument("concern_id")
@@ -474,7 +474,6 @@ def run_orchestrate(argv: list[str]) -> None:
 
     elif args.action == "swarm":
         from opencode_crack.runtime import control_db
-        from opencode_crack.runtime.agent_profile import AgentProfile
         from opencode_crack.orchestrator.manager_loop import ManagerLoop
 
         profiles = []
@@ -826,10 +825,10 @@ def _run_knowledge(args) -> None:
 
 def main() -> None:
     """Zero-argument entry point for the `orchestrate` console script
-    (see pyproject.toml). AI-Brain's own CLI calls run_orchestrate()
-    directly with an explicit argv slice; this thin wrapper exists only
-    because setuptools console-script entry points must be callables
-    that take no arguments."""
+    (see pyproject.toml). A consuming project's own CLI can instead call
+    run_orchestrate() directly with an explicit argv slice; this thin
+    wrapper exists only because setuptools console-script entry points
+    must be callables that take no arguments."""
     run_orchestrate(sys.argv[1:])
 
 

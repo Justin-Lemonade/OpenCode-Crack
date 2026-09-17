@@ -14,7 +14,7 @@ VALID_ROLES = frozenset({"manager", "worker", "tester", "monitor"})
 
 @dataclass
 class AgentProfile:
-    """Stable identity for one persistent AI-Brain agent.
+    """Stable identity for one persistent control-plane agent.
     Fields map 1:1 to the agents table in control.db."""
     agent_id: str
     role: str

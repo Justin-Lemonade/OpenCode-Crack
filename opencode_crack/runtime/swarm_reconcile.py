@@ -1,5 +1,5 @@
 """
-Reconcile a completed SwarmResult with AI-Brain control-plane records
+Reconcile a completed SwarmResult with this package's control-plane records
 (roadmap D-161, from `iteration improvement ideas status.md`).
 
 Maps each agent reported by a swarm run onto registered agents in control.db

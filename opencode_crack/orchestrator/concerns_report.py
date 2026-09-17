@@ -31,7 +31,7 @@ def render_markdown(concerns: list) -> str:
     needs_attention.sort(key=lambda c: (SEVERITY_ORDER.get(c.severity, 9), c.state.created_at or ""))
 
     lines = []
-    lines.append("# AI Brain — Concerns Board")
+    lines.append("# Concerns Board")
     lines.append("")
     lines.append(
         f"_Auto-generated {_now_str()} — do not hand-edit. This is the "

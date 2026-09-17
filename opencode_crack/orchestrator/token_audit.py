@@ -47,7 +47,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Iterable
 
-from opencode_crack.orchestrator.protocol_audit import normalize_block, split_blocks
+from opencode_crack.orchestrator.protocol_audit import split_blocks
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -74,7 +74,7 @@ DEFAULT_EXCLUDED_DIRS = (
     # Derived/environment content that is never project prose (the
     # real-repo audit hung scanning 16k files, 94% of them here):
     # IDE runtime state, disposable worktrees / nested checkouts.
-    ".kilo", ".swarm-worktrees-local", "test-worktree", "AI-Brain-",
+    ".kilo", ".swarm-worktrees-local", "test-worktree", "OpenCode-Crack",
 )
 # Directory-name prefixes (any path component) for families like
 # venv_chromadb_0_5 / venv_chromadb_159_py312 — present and future

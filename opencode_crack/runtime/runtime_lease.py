@@ -69,7 +69,7 @@ _SERVER_PASSWORD_ENV = "OPENCODE_SERVER_PASSWORD"
 # 200). This names the actual client truthfully; it is identification,
 # not an auth boundary (credentials are still required). Duplicated in
 # agent_runtime.py on purpose so this module stays dependency-free.
-HTTP_USER_AGENT = "AI-Brain-runtime-lease"
+HTTP_USER_AGENT = "opencode-crack-runtime-lease"
 
 
 class RuntimeInUseError(RuntimeError):

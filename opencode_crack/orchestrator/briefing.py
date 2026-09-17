@@ -96,7 +96,7 @@ def build_briefing(tasks: list[Task]) -> str:
     f = briefing_fields(tasks)
     q = f["queue_summary"]
     lines = [
-        "# AI Brain — Delegated Agent Briefing",
+        "# Delegated Agent Briefing",
         "",
         f"Queue: {q['total']} tasks — {q['done']} done, {q['review']} review, "
         f"{q['active']} active, {q['blocked']} blocked, {q['open']} open",

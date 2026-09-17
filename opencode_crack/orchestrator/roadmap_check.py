@@ -46,50 +46,6 @@ def _documents(path: "Path | str | None" = None) -> list[Path]:
     return [ROADMAP_PATH, *extensions]
 
 
-def check_roadmap(path: "Path | str | None" = None) -> list[str]:
-    """Return every roadmap-integrity violation as a message string.
-
-    Each message names the exact offending task ID and the file it was found
-    in so a violation is actionable. Returns [] when the roadmap is clean.
-    Findings are deterministic: per-task checks are emitted in document order
-    (main roadmap first, then delegated files sorted by name), and duplicate
-    reports are grouped and sorted by task ID.
-    """
-    violations: list[str] = []
-    occurrences: dict[str, list[str]] = {}  # task ID -> basenames it appears in
-
-    for document in _documents(path):
-        text = document.read_text(encoding="utf-8")
-        matches = list(_HEADER_RE.finditer(text))
-        for i, match in enumerate(matches):
-            task_id = match.group(1)
-            occurrences.setdefault(task_id, []).append(document.name)
-
-            prefix = task_id.split("-", 1)[0]
-            if prefix not in TIER_PREFIXES:
-                violations.append(
-                    f"{task_id} ({document.name}): unrecognized tier prefix '{prefix}'"
-                )
-
-            section_end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-            section = text[match.end():section_end]
-            if not _PRIORITY_RE.search(section):
-                violations.append(f"{task_id} ({document.name}): missing explicit priority")
-
-    for task_id in sorted(occurrences):
-        seen = occurrences[task_id]
-        if len(seen) > 1:
-            if len(set(seen)) == 1:
-                violations.append(
-                    f"duplicate task ID {task_id} ({seen[0]}): appears {len(seen)} times"
-                )
-            else:
-                locations = ", ".join(sorted(set(seen)))
-                violations.append(f"duplicate task ID {task_id}: {locations}")
-
-    return violations
-
-
 def _delegated_files(delegated_dir: "Path | str | None" = None) -> list[Path]:
     """Return the delegated-task extension files, sorted by name."""
     directory = Path(delegated_dir) if delegated_dir is not None else DELEGATED_TASKS_DIR

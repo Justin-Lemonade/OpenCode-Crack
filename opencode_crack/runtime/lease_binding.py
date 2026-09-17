@@ -1,5 +1,5 @@
 """
-Bind an existing OpenCode session to the AI-Brain task lease model
+Bind an existing OpenCode session to this package's task lease model
 (roadmap D-162, from `iteration improvement ideas status.md`).
 
 A session/lease binding keeps task ID, agent ID, and session ID attributable

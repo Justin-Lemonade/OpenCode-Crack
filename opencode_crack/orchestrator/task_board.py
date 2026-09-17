@@ -247,8 +247,8 @@ def _save_states(states: dict) -> None:
     for task_id, entry in states.items():
         if not isinstance(entry, dict):
             continue
-        for field in _TIMESTAMP_FIELDS:
-            _validate_timestamp_format(task_id, field, entry.get(field))
+        for field_name in _TIMESTAMP_FIELDS:
+            _validate_timestamp_format(task_id, field_name, entry.get(field_name))
     BOARD_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(BOARD_PATH, "w", encoding="utf-8") as f:
         yaml.safe_dump(states, f, sort_keys=True, default_flow_style=False)

@@ -1,8 +1,8 @@
-"""AI-Brain -> OpenCode Swarm coordination boundary.
+"""Control plane -> OpenCode Swarm coordination boundary.
 
-This module is intentionally small: AI-Brain owns durable organizational
-identity and task leases; OpenCode Swarm owns live worker sessions,
-inter-agent delivery, and swarm execution state.
+This module is intentionally small: this package's control plane owns
+durable organizational identity and task leases; OpenCode Swarm owns live
+worker sessions, inter-agent delivery, and swarm execution state.
 
 The coordinator translates registered AgentProfile records into a Swarm
 configuration and mirrors Swarm events back into control.db. Agents receive
@@ -52,7 +52,7 @@ def build_swarm_config(
     max_concurrent: int | None = None,
     budget_usd: float | None = None,
 ) -> dict:
-    """Build the external Swarm config from AI-Brain's persistent roles."""
+    """Build the external Swarm config from this control plane's persistent roles."""
     profile_list = list(profiles)
     if not profile_list:
         raise ValueError("At least one registered agent is required")
@@ -142,7 +142,7 @@ def _agent_prompt(
 ) -> str:
     role_context = profile.role_context(profile.role)
     lines = [
-        f"AI-Brain persistent agent id: {profile.agent_id}",
+        f"Persistent agent id: {profile.agent_id}",
         f"Role: {profile.role}",
         f"Manager: {profile.manager_id or 'none'}",
         ROLE_INSTRUCTIONS[profile.role],
@@ -156,19 +156,19 @@ def _agent_prompt(
     if profile.notes:
         lines.append(f"Persistent notes: {profile.notes}")
     if task_id:
-        lines.append(f"AI-Brain task id: {task_id}")
+        lines.append(f"Task id: {task_id}")
     if task_prompt:
         lines.append(f"Current assignment:\n{task_prompt}")
     lines.append(
         "Coordination rule: communicate through swarm_send/swarm_inbox and "
-        "shared Swarm memory for runtime coordination; AI-Brain control.db "
+        "shared Swarm memory for runtime coordination; control.db "
         "remains the durable organizational source of truth."
     )
     return "\n".join(lines)
 
 
 def _tools_for(profile: AgentProfile) -> dict[str, bool]:
-    """Translate AI-Brain's coarse permission names into Swarm tool flags."""
+    """Translate this control plane's coarse permission names into Swarm tool flags."""
     requested = set(profile.tool_permissions)
     if not requested:
         requested = {"read"}

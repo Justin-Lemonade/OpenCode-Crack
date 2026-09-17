@@ -109,3 +109,43 @@ package in isolation and it fails immediately with
 Once those three are settled, the remaining plan steps (git subtree
 split with history, push, rebuild `pyproject.toml`, wire AI-Brain back
 as a consumer, full test suite) are mechanical from here.
+
+## Update — post-push status
+
+All three items above are resolved: repo created
+(`Justin-Lemonade/OpenCode-Crack`), package name confirmed as
+`opencode_crack`, and `change_summary.py` shipped with option 2 (the
+decisions source is optional, defaulting to empty — see that file's own
+docstring for the full rationale). The subtree split with history didn't
+pan out (see the project's own overview notes); the package was pushed
+fresh instead, with AI-Brain's original commit history untouched.
+
+**Cosmetic rebrand pass — done.** Every AI-Brain-specific string with
+real user/agent-facing surface has been fixed: the context-telemetry env
+var, HTTP User-Agent identifiers, OpenCode session titles, the dashboard
+(title, header, print statement, message-source label), agent identity
+prompts, generated report headers, and a real (not just cosmetic) bug in
+`token_audit.py` where it excluded a hardcoded `"AI-Brain-"` directory
+name from its own scan — a nested-checkout exclusion that only made
+sense in the origin repo, now fixed to exclude `"OpenCode-Crack"`
+instead. Four files still mention AI-Brain deliberately, not by
+omission — `change_summary.py`, `config.py`, `prompts/registry.py`,
+`tools/registry.py` — because those mentions are accurate provenance
+documentation (what was deliberately left behind during extraction and
+why), not stray branding, and erasing them would lose real information
+a future maintainer needs.
+
+**General hardening pass — done.** Ran `pyflakes` across the package
+(clean; wasn't run before). Found and fixed: a genuine bug in
+`roadmap_check.py` where two full implementations of `check_roadmap`
+existed — the second silently shadowed the first at import time, making
+~40 lines of the first dead and unreachable (removed, since the second
+was a strict superset); several unused imports (`datetime`/`timezone` in
+`dashboard.py`, `AgentProfile` in `cli.py`, `normalize_block` in
+`token_audit.py`, `shutil`/`time`/`Path` in `request_queue.py`/
+`first_party_swarm.py`); an unused local variable in `cli.py`'s argument
+parser setup; a stray `f"..."` prefix with no interpolation in
+`report_schema.py`; and a loop variable in `task_board.py` shadowing the
+module-level `dataclasses.field` import. Full test suite re-verified
+green after every change (914 passed, 11 skipped, 0 failed — same
+baseline as the original push).

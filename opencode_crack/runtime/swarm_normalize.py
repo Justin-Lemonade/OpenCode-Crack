@@ -1,6 +1,6 @@
 """
 Normalize OpenCode Swarm `swarm run --json` results and JSONL events into a
-stable AI-Brain representation (roadmap D-142, broken out of C-074).
+stable internal representation (roadmap D-142, broken out of C-074).
 
 The swarm CLI's exact key spelling is not guaranteed (snake_case vs
 camelCase, `swarmId` vs `swarm_id`, ...), so every consumer-facing record

@@ -51,7 +51,7 @@ def render_identity_prompt(profile: AgentProfile) -> str:
     boundary) is appended when the profile's role has a fixture.
     """
     lines = [
-        f"You are {profile.agent_id}, the {profile.role} in the AI Brain multi-agent system.",
+        f"You are {profile.agent_id}, the {profile.role} in this multi-agent system.",
         f"Model: {profile.model}",
     ]
     if profile.manager_id:

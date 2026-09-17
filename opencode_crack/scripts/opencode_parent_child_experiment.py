@@ -129,7 +129,7 @@ def run_experiment(base_url: str, level: int, output_path: Path, wait_seconds: i
     stop_events = threading.Event()
     event_thread = threading.Thread(target=collect_events, args=(base_url, events, stop_events), daemon=True)
     event_thread.start()
-    parent = create_session(base_url, parent_id=None, title=f"AI-Brain live parent level {level}", model=model)
+    parent = create_session(base_url, parent_id=None, title=f"opencode-crack experiment parent level {level}", model=model)
     parent_id = parent.get("id")
     if not parent_id:
         raise RuntimeError(f"OpenCode returned no parent session id: {parent!r}")
@@ -140,7 +140,7 @@ def run_experiment(base_url: str, level: int, output_path: Path, wait_seconds: i
         child = create_session(
             base_url,
             parent_id=parent_id,
-            title=f"AI-Brain live child {index + 1:02d} level {level}",
+            title=f"opencode-crack experiment child {index + 1:02d} level {level}",
             model=model,
         )
         child_id = child.get("id")

@@ -12,7 +12,6 @@ reviewable file change into an existing audited transition.
 from __future__ import annotations
 
 import re
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any

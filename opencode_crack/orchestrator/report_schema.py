@@ -156,7 +156,7 @@ def write_report_json(task_id: str, report: dict, reports_dir: "Path" = Path("re
     """
     problems = validate_report(report)
     if problems:
-        raise ValueError(f"refusing to write invalid report:\n- " + "\n- ".join(problems))
+        raise ValueError("refusing to write invalid report:\n- " + "\n- ".join(problems))
     path = report_json_path(task_id, reports_dir)
     path.write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",

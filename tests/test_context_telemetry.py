@@ -31,12 +31,12 @@ def db(tmp_path):
 
 @pytest.fixture
 def enabled(monkeypatch):
-    monkeypatch.setenv("AI_BRAIN_CONTEXT_TELEMETRY", "1")
+    monkeypatch.setenv("OPENCODE_CRACK_CONTEXT_TELEMETRY", "1")
 
 
 @pytest.fixture
 def disabled(monkeypatch):
-    monkeypatch.delenv("AI_BRAIN_CONTEXT_TELEMETRY", raising=False)
+    monkeypatch.delenv("OPENCODE_CRACK_CONTEXT_TELEMETRY", raising=False)
 
 
 # --- opt-in gate --------------------------------------------------------------
@@ -47,12 +47,12 @@ class TestOptIn:
 
     def test_on_for_truthy_values(self, monkeypatch):
         for value in ("1", "true", "yes", "on", "TRUE"):
-            monkeypatch.setenv("AI_BRAIN_CONTEXT_TELEMETRY", value)
+            monkeypatch.setenv("OPENCODE_CRACK_CONTEXT_TELEMETRY", value)
             assert telemetry_enabled() is True
 
     def test_off_for_anything_else(self, monkeypatch):
         for value in ("0", "false", "no", "", "off"):
-            monkeypatch.setenv("AI_BRAIN_CONTEXT_TELEMETRY", value)
+            monkeypatch.setenv("OPENCODE_CRACK_CONTEXT_TELEMETRY", value)
             assert telemetry_enabled() is False
 
     def test_record_is_noop_when_disabled(self, disabled, db):

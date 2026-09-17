@@ -40,7 +40,7 @@ def render_markdown(tasks: list) -> str:
     open_ = by_status.get("open", [])
 
     lines = []
-    lines.append("# AI Brain — Orchestration Status")
+    lines.append("# Orchestration Status")
     lines.append("")
     lines.append(f"_Auto-generated {_now_str()} — do not hand-edit. "
                   f"See [AGENTS.md](docs/AGENTS.md) for the workflow this reflects. "

@@ -1,7 +1,7 @@
 """
 Read-only Swarm + runtime diagnostics (roadmap D-165).
 
-A single deterministic snapshot of OpenCode Swarm health and AI-Brain
+A single deterministic snapshot of OpenCode Swarm health and this package's
 runtime state, built entirely from existing helpers:
 
   * ``SwarmRuntime.check()``   — swarm executable availability + version;

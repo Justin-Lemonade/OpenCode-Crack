@@ -13,7 +13,7 @@ heavyweight workflow against the new compact one:
 
 Design rules (from the roadmap acceptance):
 
-  * opt-in — nothing is recorded unless AI_BRAIN_CONTEXT_TELEMETRY is set to a
+  * opt-in — nothing is recorded unless OPENCODE_CRACK_CONTEXT_TELEMETRY is set to a
     truthy value;
   * no secrets, no memory contents, no full prompts/responses — only integer
     token estimates per category are ever stored, so redaction is structural:
@@ -35,7 +35,7 @@ from typing import Any
 
 from opencode_crack.runtime import control_db
 
-ENV_FLAG = "AI_BRAIN_CONTEXT_TELEMETRY"
+ENV_FLAG = "OPENCODE_CRACK_CONTEXT_TELEMETRY"
 EVENT_TYPE = "context_telemetry"
 CONTEXT_CATEGORIES = ("protocol", "contract", "briefing", "handoff")
 ALL_CATEGORIES = (*CONTEXT_CATEGORIES, "output")

@@ -1,6 +1,6 @@
 """OpenCode HTTP runtime adapter.
 
-This adapter is kept behind a narrow interface so the rest of AI-Brain does
+This adapter is kept behind a narrow interface so the rest of this package does
 not depend on OpenCode's HTTP details. Current routes follow the documented
 OpenCode server API: POST /session, POST /session/:id/message,
 GET /session/:id, and DELETE /session/:id.
@@ -52,7 +52,7 @@ def _default_http_client(method: str, url: str, body: Optional[dict]) -> dict:
                  # User-Agents even with valid credentials (verified live
                  # against `/`). Truthful client identification, not a
                  # credential or auth-model change.
-                 "User-Agent": "AI-Brain-agent-runtime"},
+                 "User-Agent": "opencode-crack-agent-runtime"},
         method=method,
     )
     try:
@@ -92,7 +92,7 @@ def _authed_health_check(base_url: str) -> bool:
     runtime_lease.probe_server for the three-state distinction)."""
     auth = _server_basic_auth_header()
     req = urllib.request.Request(base_url.rstrip("/") + "/")
-    req.add_header("User-Agent", "AI-Brain-agent-runtime")
+    req.add_header("User-Agent", "opencode-crack-agent-runtime")
     if auth:
         req.add_header("Authorization", auth)
     try:
@@ -116,7 +116,7 @@ def _infer_provider(model_id: str) -> str:
 
 
 class AgentRuntime:
-    """Thin adapter between AI-Brain and the current OpenCode server API."""
+    """Thin adapter between this control plane and the current OpenCode server API."""
 
     def __init__(self, base_url: str = OPENCODE_BASE_URL, db_path: Path = CONTROL_DB_PATH) -> None:
         self.base_url = base_url.rstrip("/")
@@ -131,7 +131,7 @@ class AgentRuntime:
     ) -> str:
         client = http_client or _default_http_client
         payload: dict[str, Any] = {
-            "title": f"[AI-Brain] {agent_profile.role} — {task_id or 'no task'}",
+            "title": f"[opencode-crack] {agent_profile.role} — {task_id or 'no task'}",
         }
         if agent_profile.model:
             if ":" in agent_profile.model:

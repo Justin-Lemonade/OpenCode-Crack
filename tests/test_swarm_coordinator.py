@@ -17,7 +17,7 @@ def test_build_config_preserves_roles_and_manager_relationships():
 
     assert [a["name"] for a in config["agents"]] == ["manager", "coder", "tester"]
     assert "Role: manager" in config["agents"][0]["task"]
-    assert "AI-Brain task id: D-201" in config["agents"][1]["task"]
+    assert "Task id: D-201" in config["agents"][1]["task"]
     assert "Manager: manager" in config["agents"][1]["task"]
     assert config["agents"][1]["tools"]["write"] is True
     assert config["agents"][0]["tools"]["write"] is False

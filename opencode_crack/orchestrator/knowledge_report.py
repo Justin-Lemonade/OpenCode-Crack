@@ -34,7 +34,7 @@ def render_markdown(entries: list) -> str:
     needs_review.sort(key=lambda e: (e.state.created_at or ""))
 
     lines = []
-    lines.append("# AI Brain — Knowledge Board")
+    lines.append("# Knowledge Board")
     lines.append("")
     lines.append(
         f"_Auto-generated {_now_str()} — do not hand-edit. This is the "

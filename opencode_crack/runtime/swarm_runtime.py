@@ -1,7 +1,7 @@
 """OpenCode Swarm subprocess adapter.
 
-AI-Brain owns organizational state; OpenCode Swarm owns worker execution.
-The two databases remain separate: control.db is the AI-Brain control plane;
+This package owns organizational state; OpenCode Swarm owns worker execution.
+The two databases remain separate: control.db is this package's control plane;
 .swarm/swarm.db is Swarm's runtime state.
 """
 from __future__ import annotations
@@ -59,7 +59,7 @@ class SwarmRuntime:
         self.cwd = Path(cwd) if cwd else Path.cwd()
         # Deliberately separate from db_path: db_path is Swarm's own
         # runtime database (passed to `swarm run --db`), while this is
-        # the AI-Brain control plane database that ingest_events()
+        # the control plane database that ingest_events()
         # writes into. Defaults to the real CONTROL_DB_PATH; tests that
         # need an isolated control DB pass control_db_path explicitly
         # rather than repurposing db_path, which stays reserved for
@@ -109,7 +109,7 @@ class SwarmRuntime:
         """Run a swarm and normalize its JSON result/event stream.
 
         ``--db`` always points at Swarm's own database; it must never be the
-        AI-Brain control DB. The latter is updated only by ``ingest_events``.
+        control plane's own DB. The latter is updated only by ``ingest_events``.
 
         ``cwd``, if given, overrides ``self.cwd`` for this call only (D-290:
         callers that resolved and validated an isolated lane worktree via
@@ -160,7 +160,7 @@ class SwarmRuntime:
         )
 
     def ingest_events(self, result: SwarmResult) -> int:
-        """Mirror runtime events into AI-Brain's control plane idempotently."""
+        """Mirror runtime events into this control plane idempotently."""
         count = 0
         for event in result.events:
             agent = event.get("agent") or event.get("agentName") or event.get("agent_id")
