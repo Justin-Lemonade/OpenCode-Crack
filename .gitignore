@@ -26,6 +26,11 @@ data/control.db-shm
 *.db-wal
 *.db-shm
 
+# Knowledge search index (regenerated on demand by knowledge_search.py;
+# a real .db slipped into an early commit of this repo via a local test
+# run before this entry existed — see git history)
+orchestration/.knowledge_search_index.db
+
 # Board-generated dashboards (regenerated on sync — same convention
 # as AI-Brain's STATUS.md: don't hand-edit or commit stale copies)
 STATUS.md
