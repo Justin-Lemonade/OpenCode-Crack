@@ -1,0 +1,63 @@
+name: Sync orchestrator with AI-Brain-
+
+# Two-way sync of the orchestrator/runtime/tools/prompts/storage.migrations
+# code between this repo and Justin-Lemonade/AI-Brain-. Never auto-merges
+# anything -- every run either advances the sync state (because a
+# previously-opened sync PR was merged by a human) or opens a new PR for
+# a human to review. See scripts/sync_orchestrator.py for the full design
+# rationale, especially why merges are never automatic even when a patch
+# applies cleanly.
+
+on:
+  schedule:
+    - cron: "0 13 * * *"  # once daily, 13:00 UTC
+  workflow_dispatch: {}    # manual "Run workflow" button for on-demand syncs
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.SYNC_APP_ID }}
+          private-key: ${{ secrets.SYNC_APP_PRIVATE_KEY }}
+          owner: Justin-Lemonade
+          repositories: |
+            OpenCode-Crack
+            AI-Brain-
+
+      - name: Checkout OpenCode-Crack
+        uses: actions/checkout@v4
+        with:
+          path: OpenCode-Crack
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Checkout AI-Brain-
+        uses: actions/checkout@v4
+        with:
+          repository: Justin-Lemonade/AI-Brain-
+          path: AI-Brain-
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git -C OpenCode-Crack config user.name "opencode-crack-sync[bot]"
+          git -C OpenCode-Crack config user.email "opencode-crack-sync[bot]@users.noreply.github.com"
+          git -C AI-Brain- config user.name "opencode-crack-sync[bot]"
+          git -C AI-Brain- config user.email "opencode-crack-sync[bot]@users.noreply.github.com"
+
+      - name: Run two-way sync
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          AI_BRAIN_PATH: ${{ github.workspace }}/AI-Brain-
+          OCC_PATH: ${{ github.workspace }}/OpenCode-Crack
+        run: |
+          python3 OpenCode-Crack/scripts/sync_orchestrator.py check-merged
