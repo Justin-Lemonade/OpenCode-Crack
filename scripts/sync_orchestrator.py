@@ -57,6 +57,11 @@ PATH_MAP_AB_TO_OCC = {
     "src/storage/migrations.py": "opencode_crack/storage/migrations.py",
     # Matching test files, kept in sync the same way as their sources.
     "tests/test_orchestrator": "tests/test_orchestrator",  # test dir names vary; handled by content-only import remap below
+    # Skills and agent prompts -- Markdown only, no import remapping needed.
+    # Any new files/subdirectories added inside these directories are picked
+    # up automatically by the diff; no change to this map is required.
+    ".opencode/skills/": "skills/",
+    ".agent_prompts/": "agent_prompts/",
 }
 
 # Import-statement remapping. Order matters: longer/more-specific
@@ -174,6 +179,8 @@ def get_diff_paths(direction: str) -> list[str]:
             "src/tools/",
             "src/prompts/",
             "src/storage/migrations.py",
+            ".opencode/skills/",
+            ".agent_prompts/",
         ]
     return [
         "opencode_crack/orchestrator/",
@@ -181,6 +188,8 @@ def get_diff_paths(direction: str) -> list[str]:
         "opencode_crack/tools/",
         "opencode_crack/prompts/",
         "opencode_crack/storage/migrations.py",
+        "skills/",
+        "agent_prompts/",
     ]
 
 
