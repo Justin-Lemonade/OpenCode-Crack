@@ -1,0 +1,23 @@
+diff a/opencode_crack/tools/registry.py b/opencode_crack/tools/registry.py	(rejected hunks)
+@@ -193,6 +193,21 @@ def _register_defaults() -> None:
+         side_effect_level="read",
+         handler=lambda query, domain=None: brain.search_memory(query, domain=domain),
+     ))
++    registry.register(ToolSpec(
++        name="search_perfect_memory",
++        description=(
++            "Search the optional external Perfect Memory store through the "
++            "AI-Brain-owned MCP boundary (read-only, bounded discovery-first). "
++            "Returns a structured status dict; never exposes credentials."
++        ),
++        schema={"query": "str", "scope": "str | None", "limit": "int | None", "hydrate": "bool | None"},
++        permissions=["read:external_memory", "network"],
++        timeout_seconds=60,
++        side_effect_level="read",
++        handler=lambda query, scope=None, limit=None, hydrate=None: brain.search_external_memory(
++            query, scope=scope, limit=limit, hydrate=hydrate
++        ),
++    ))
+     registry.register(ToolSpec(
+         name="remember",
+         description="Store a structured fact (domain, key, value).",
