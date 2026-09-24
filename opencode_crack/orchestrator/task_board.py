@@ -48,6 +48,17 @@ cross-owner moves are now explicitly rejected at the API layer instead of
 silently allowed, and every transition logs both the recorded owner and
 the acting SESSION_ID, so impersonation is detectable after the fact.
 Shared git authorship is never treated as identity.
+
+Publication outcomes (D-362)
+----------------------------
+Every claim, start, submit, block, release, approve, reject, and complete
+either publishes or raises an error whose message carries a verified
+outcome token: outcome=no_mutation (pre-sync failure, nothing changed),
+outcome=unpublished (commit or cross-lane guard failed, change if any is
+local-only), outcome=committed_unpublished (push rejected but the
+authoritative row still shows this write, so the claim is YOURS),
+outcome=superseded (a rival owns the row now), outcome=unknown (the
+reconcile resync itself failed). Read the whole error before acting.
 """
 import re
 import subprocess
@@ -95,6 +106,33 @@ class OwnershipError(RuntimeError):
     """
 
 
+class BoardPublishError(RuntimeError):
+    """A board mutation reached publish time with an explicit outcome.
+
+    outcome is one of:
+      unpublished           commit or the cross-lane guard failed before
+                            anything left this machine; any change is
+                            local-only. Resolve the named files and retry.
+      committed_unpublished the commit exists locally but the push was
+                            rejected and the authoritative row still shows
+                            this write: the claim is YOURS. Keep working;
+                            the next board mutation republishes it.
+      superseded            the authoritative row now belongs to someone
+                            else; pick a different task.
+      unknown               the reconcile resync itself failed; check status
+                            by hand before acting.
+
+    Every message embeds outcome=<word> so callers never guess.
+    Subclasses RuntimeError so existing handlers keep catching it.
+    """
+
+    def __init__(self, message: str, outcome: str, files=None, hint: str = "") -> None:
+        super().__init__(message)
+        self.outcome = outcome
+        self.files = list(files) if files else []
+        self.hint = hint
+
+
 def _sync_before_mutation(action: str) -> None:
     pull = _run_git("pull", "--rebase", "origin", "main")
     if pull.returncode == 0:
@@ -113,11 +151,13 @@ def _sync_before_mutation(action: str) -> None:
             f"remote is unreachable; cannot safely {action}. "
             "Claiming requires a successful pull and push so the shared lock "
             "cannot be verified offline. Retry when GitHub is reachable. "
-            f"Details: {detail}"
+            f"Details: {detail} "
+            "No board state was changed by this call (outcome=no_mutation)."
         )
     raise GitSyncError(
         f"git pull failed; cannot safely {action}. Resolve the repository "
-        f"state manually before retrying. Details: {detail}"
+        f"state manually before retrying. Details: {detail} "
+        "No board state was changed by this call (outcome=no_mutation)."
     )
 
 
@@ -398,14 +438,62 @@ def _git_publish(message: str, extra_paths: Optional[list] = None) -> bool:
     # D-321/CN-007: `git commit` without a pathspec commits the whole
     # index, which would silently sweep another concurrent lane's staged
     # files into this commit. Fail closed instead (raises, commits nothing).
-    from opencode_crack.orchestrator.worktree_guard import assert_expected_staged_only
-    assert_expected_staged_only(paths)
+    from opencode_crack.orchestrator.worktree_guard import (
+        CrossLaneMutationError,
+        assert_expected_staged_only,
+    )
+    try:
+        assert_expected_staged_only(paths)
+    except CrossLaneMutationError as exc:
+        raise CrossLaneMutationError(
+            f"{exc} outcome=unpublished: nothing was committed or pushed; "
+            "the index is exactly as found. Stop and report; do not unstage, "
+            "reset, stash, or commit the foreign files."
+        ) from exc
     commit = _run_git("commit", "-m", message)
     if commit.returncode != 0 and "nothing to commit" not in commit.stdout:
-        # Something else went wrong (not just "no changes") — surface it.
-        raise RuntimeError(f"git commit failed: {commit.stderr}")
+        _run_git("reset", "-q", "--", *paths)
+        detail = (commit.stderr or commit.stdout or "unknown git error").strip()
+        raise BoardPublishError(
+            f"git commit failed: {detail}. Nothing was published "
+            "(outcome=unpublished). Your change is local-only and unstaged; "
+            "resolve the named files, then retry the board operation.",
+            outcome="unpublished",
+            files=paths,
+        )
     push = _run_git("push")
     return push.returncode == 0
+
+
+def _verified_republish(task_id: str, expect_status: str, expect_owner, message: str) -> Task:
+    resync = _run_git("pull", "--rebase", "origin", "main")
+    if resync.returncode != 0:
+        detail = (resync.stderr or resync.stdout or "unknown git error").strip()
+        raise BoardPublishError(
+            f"Could not reconcile {task_id} after push rejection: resync failed "
+            f"({detail}). Check status by hand before acting (outcome=unknown).",
+            outcome="unknown",
+        )
+    fresh = get_task(task_id)
+    fresh_status = fresh.state.status if fresh else "unknown"
+    fresh_owner = _owner_of(_load_states().get(task_id, {})) if fresh else None
+    if fresh is not None and fresh_status == expect_status and (expect_owner is None or fresh_owner == expect_owner):
+        if _git_publish(message):
+            return get_task(task_id)
+        raise BoardPublishError(
+            f"Push rejected twice for {task_id}; the board still shows your write "
+            f"(status={fresh_status}). The claim is YOURS and authoritative "
+            "(outcome=committed_unpublished). Keep working — the next board "
+            "mutation republishes it; do NOT assume taken.",
+            outcome="committed_unpublished",
+        )
+    raise BoardPublishError(
+        f"Push rejected — {task_id} may have just been claimed by another "
+        f"agent. Current status: {fresh_status}"
+        + (f" (owner: {fresh_owner})" if fresh_owner else "")
+        + ". Pick a different task. (outcome=superseded)",
+        outcome="superseded",
+    )
 
 
 def claim_task(task_id: str, agent: str) -> Task:
@@ -438,17 +526,9 @@ def claim_task(task_id: str, agent: str) -> Task:
     _write_status(_merge_tasks())
     _append_activity(f"{task_id}  {task.state.status} -> claimed  {agent}  owner={agent}  actor_session={SESSION_ID}")
 
-    published = _git_publish(f"orchestrator: claim {task_id} for {agent}")
-    if not published:
-        # Someone else pushed between our pull and our push. Re-sync and
-        # tell the caller the truth instead of silently overwriting.
-        _run_git("pull", "--rebase", "origin", "main")
-        fresh = get_task(task_id)
-        raise RuntimeError(
-            f"Push rejected — {task_id} may have just been claimed by another "
-            f"agent. Current status: {fresh.state.status if fresh else 'unknown'}. "
-            "Pick a different task."
-        )
+    message = f"orchestrator: claim {task_id} for {agent}"
+    if not _git_publish(message):
+        return _verified_republish(task_id, "claimed", agent, message)
     return get_task(task_id)
 
 
@@ -599,5 +679,7 @@ def _update_status(task_id: str, status: str, notes: str = "", clear_assignee: b
         + ("  legacy" if legacy else "")
         + (f"  \"{notes}\"" if notes else "")
     )
-    _git_publish(f"orchestrator: {task_id} -> {status}", extra_paths=[report_path] if report_path else None)
+    message = f"orchestrator: {task_id} -> {status}"
+    if not _git_publish(message, extra_paths=[report_path] if report_path else None):
+        return _verified_republish(task_id, status, agent, message)
     return get_task(task_id)
