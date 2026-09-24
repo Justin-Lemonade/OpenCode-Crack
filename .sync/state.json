@@ -2,7 +2,11 @@
   "ai_brain_synced_sha": "c8e64eae2c63c47afae26f921edf76a802573738",
   "occ_synced_sha": "2099d0adafae4de328885f56366b2db2fb0031c1",
   "pending": {
-    "ai-brain-to-occ": null,
+    "ai-brain-to-occ": {
+      "pr_number": 3,
+      "branch": "sync/ai-brain-to-occ-5f0293a9e1",
+      "head_sha": "5f0293a9e14176da9275bd3e450b6b99b37fd3ed"
+    },
     "occ-to-ai-brain": {
       "pr_number": 42,
       "branch": "sync/occ-to-ai-brain-7527878850",
