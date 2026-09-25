@@ -105,7 +105,7 @@ def _assistant_records(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if isinstance(info, dict) and info.get("role") == "assistant":
             texts = [
                 part.get("text", "")
-                for part in message.get("parts", [])
+                for part in (message.get("parts", [])+message.get("content", []))
                 if isinstance(part, dict) and part.get("type") == "text"
             ]
             records.append(
@@ -122,7 +122,7 @@ def _assistant_records(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
             model = message.get("model", {}) or {}
             texts = [
                 part.get("text", "")
-                for part in message.get("parts", [])
+                for part in (message.get("parts", [])+message.get("content", []))
                 if isinstance(part, dict) and part.get("type") == "text"
             ]
             records.append(

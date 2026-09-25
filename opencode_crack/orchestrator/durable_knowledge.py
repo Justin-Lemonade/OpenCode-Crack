@@ -159,6 +159,16 @@ TITLE_HIT = 3
 TAGKW_HIT = 2
 BODY_HIT = 1
 USEFUL_CAP = 5
+# search_entries()'s BM25 path: useful_bonus (an integer 0-5) must act as
+# a tiebreaker between near-equally-relevant results, never override a
+# real relevance difference. BM25 scores are unbounded but in practice
+# fall well under 1.0 per keyword hit on any non-trivial corpus; scaling
+# useful_bonus down by 1000x keeps its maximum possible contribution
+# (5 * 0.001 = 0.005) below what a single keyword hit is ever worth,
+# while still breaking exact ties deterministically in useful_count's
+# favor. See test_search_entries_uses_bm25_ranking / the sidecar-count
+# scoring bug this fixed.
+_USEFUL_TIEBREAK_SCALE = 0.001
 
 
 @dataclass
@@ -778,7 +788,16 @@ def search_entries(keywords: Optional[list] = None,
         if kws:
             if e.id not in fts_scores:
                 continue  # keywords given but nothing matched: not relevant
-            score = fts_scores[e.id] + useful_bonus
+            # useful_bonus is a small integer tiebreaker, not a competing
+            # relevance signal -- it must never be able to outrank a real
+            # BM25 relevance gap (found via test_search_entries_uses_
+            # bm25_ranking: with a tiny/near-degenerate corpus, BM25's
+            # raw scores can be fractions of 1.0, so an unscaled integer
+            # useful_bonus of even 1 would swamp a genuine title-vs-body
+            # relevance difference). Scale it down to strictly less than
+            # the smallest meaningful BM25 gap instead of adding it at
+            # full integer weight.
+            score = fts_scores[e.id] + (useful_bonus * _USEFUL_TIEBREAK_SCALE)
         else:
             score = useful_bonus
         scored.append((e, score))
