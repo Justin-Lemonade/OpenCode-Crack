@@ -155,7 +155,7 @@ def _archive(path: Path, request: dict[str, Any]) -> None:
 def process_inbox() -> int:
     """Process all inbox requests sequentially. Returns the number applied."""
     INBOX.mkdir(parents=True, exist_ok=True)
-    files = sorted(INBOX.glob("*.yaml"))
+    files = sorted([*INBOX.glob("*.yaml"), *INBOX.glob("*.yml")])
     applied = 0
     for path in files:
         request = _load(path)

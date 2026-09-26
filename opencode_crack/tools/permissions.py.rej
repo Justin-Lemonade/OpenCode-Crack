@@ -1,0 +1,19 @@
+diff a/opencode_crack/tools/permissions.py b/opencode_crack/tools/permissions.py	(rejected hunks)
+@@ -10,11 +11,15 @@ actual execution:
+            |
+        tool registry        (C-006, opencode_crack/tools/registry.py)
+            |
+-       permission policy     <- THIS MODULE
++       permission policy     <- evaluate(), below
+            |
+       allowed / denied / approval required
+            |
+-        executor             (execute_tool(), below)
++        approval             (C-080, src.storage.approvals + approve_request/deny_request/run_approved, below)
++           |
++        executor             (C-080, opencode_crack/tools/executor.py: timeout + output cap)
++           |
++         audit               (C-080, src.storage.approvals.record_audit_entry — every outcome, always)
+ 
+ Model-independent by construction: nothing — cloud model, local model,
+ CLI, Telegram — should call ToolRegistry.call() directly. Everything
