@@ -74,3 +74,14 @@ def is_smoke_test_task(task: Any) -> bool:
 def should_enforce_critic_gate(task: Any) -> bool:
     """True if production gate should be enforced (i.e., not smoke-test)."""
     return not is_smoke_test_task(task)
+import sqlite3
+CRITIC_APPROVAL_EVENT = "critic_approved"
+def has_critic_approval(task_id, db_path):
+ try:
+  conn=sqlite3.connect(str(db_path));row=conn.execute("SELECT 1 FROM events WHERE task_id=? AND event_type=? LIMIT 1",(task_id,CRITIC_APPROVAL_EVENT)).fetchone();conn.close();return row is not None
+ except Exception: return False
+def check_critic_gate(task, db_path=None):
+ if not should_enforce_critic_gate(task): return True,"smoke-test bypass: critic gate not enforced"
+ tid=task.get("id") if isinstance(task,dict) else getattr(task,"id",None)
+ if db_path is not None and tid is not None and has_critic_approval(tid,db_path): return True,"critic approval recorded"
+ return False,"PLAN_CRITIC_GATE_VIOLATION: production task without critic approval"

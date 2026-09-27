@@ -78,6 +78,11 @@ class ManagerLoop:
             return ManagerLoopResult(task_id, False, None, 0, f"Unknown task: {task_id}")
         if manager.role != "manager" or worker.role != "worker" or tester.role != "tester":
             return ManagerLoopResult(task_id, False, None, 0, "Profiles must be manager, worker, tester respectively")
+        from opencode_crack.orchestrator import critic_gate
+        _gate_task = {"id": getattr(task, "id", task_id), "title": getattr(task, "title", "")}
+        _allowed, _reason = critic_gate.check_critic_gate(_gate_task, self.db_path)
+        if not _allowed:
+            return ManagerLoopResult(task_id, False, None, 0, _reason)
 
         lane: worktree_guard.LaneWorktree | None = None
         if require_isolation:
