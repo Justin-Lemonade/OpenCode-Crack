@@ -79,7 +79,17 @@ class ManagerLoop:
         if manager.role != "manager" or worker.role != "worker" or tester.role != "tester":
             return ManagerLoopResult(task_id, False, None, 0, "Profiles must be manager, worker, tester respectively")
         from opencode_crack.orchestrator import critic_gate
-        _gate_task = {"id": getattr(task, "id", task_id), "title": getattr(task, "title", "")}
+        # Forward tags too, not just id/title -- critic_gate's
+        # smoke-test bypass checks tags first (see
+        # is_smoke_test_task()), and dropping them here silently
+        # defeats that bypass for every real caller, not just tests
+        # (found via test_worktree_enforcement.py's fixtures failing
+        # the gate despite being tagged smoke-test).
+        _gate_task = {
+            "id": getattr(task, "id", task_id),
+            "title": getattr(task, "title", ""),
+            "tags": getattr(task, "tags", None),
+        }
         _allowed, _reason = critic_gate.check_critic_gate(_gate_task, self.db_path)
         if not _allowed:
             return ManagerLoopResult(task_id, False, None, 0, _reason)

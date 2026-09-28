@@ -273,3 +273,10 @@ class AgentRuntime:
             time.sleep(0.5)
         proc.terminate()
         raise RuntimeError(f"`opencode serve` not healthy within {timeout_seconds}s. Check installation.")
+def _auth_header():
+ import base64
+ import os
+ user = os.environ.get('OPENCODE_SERVER_USERNAME', '')
+ password = os.environ.get('OPENCODE_SERVER_PASSWORD', '')
+ if not user or not password: return {}
+ token = base64.b64encode(f'{user}:{password}'.encode()).decode();return {'Authorization': f'Basic {token}'}

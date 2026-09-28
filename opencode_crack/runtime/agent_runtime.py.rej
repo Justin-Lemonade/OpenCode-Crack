@@ -1,0 +1,26 @@
+diff a/opencode_crack/runtime/agent_runtime.py b/opencode_crack/runtime/agent_runtime.py	(rejected hunks)
+@@ -52,7 +52,7 @@ def _default_http_client(method: str, url: str, body: Optional[dict]) -> dict:
+                  # User-Agents even with valid credentials (verified live
+                  # against `/`). Truthful client identification, not a
+                  # credential or auth-model change.
+-                 "User-Agent": "AI-Brain-agent-runtime"},
++                 "User-Agent": "AI-Brain-agent-runtime", **_auth_header()},
+         method=method,
+     )
+     try:
+@@ -134,13 +134,13 @@ class AgentRuntime:
+             "title": f"[AI-Brain] {agent_profile.role} — {task_id or 'no task'}",
+         }
+         if agent_profile.model:
+-            if ":" in agent_profile.model:
++            if ":" in agent_profile.model and "/" not in agent_profile.model:
+                 provider, model_id = agent_profile.model.split(":", 1)
+             elif "/" in agent_profile.model:
+                 provider, model_id = agent_profile.model.split("/", 1)
+             else:
+                 provider, model_id = _infer_provider(agent_profile.model), agent_profile.model
+-            payload["model"] = {"providerID": provider, "modelID": model_id}
++            payload["model"] = {"providerID": provider, "id": model_id}
+         try:
+             resp = client("POST", f"{self.base_url}/session", payload)
+         except _OpenCodeError as e:
