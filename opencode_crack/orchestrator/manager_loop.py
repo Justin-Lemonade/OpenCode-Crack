@@ -58,6 +58,7 @@ class ManagerLoop:
         timeout_seconds: int = 3600,
         max_concurrent: int = 3,
         budget_usd: float | None = None,
+        server_url: str | None = None,
         require_isolation: bool = True,
     ) -> ManagerLoopResult:
         """Run one task through the manager/worker/tester swarm.
@@ -128,7 +129,7 @@ class ManagerLoop:
 
         config_path = self._write_swarm_config(task.title, manager, worker, tester)
         try:
-            run_kwargs = {"max_concurrent": max_concurrent, "budget_usd": budget_usd, "timeout_seconds": timeout_seconds}
+            run_kwargs = {"max_concurrent": max_concurrent, "budget_usd": budget_usd, "timeout_seconds": timeout_seconds, "server_url": server_url}
             if lane is not None:
                 run_kwargs["cwd"] = lane.path
             result = self.runtime.run(config_path, **run_kwargs)

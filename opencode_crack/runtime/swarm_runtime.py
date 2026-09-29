@@ -104,6 +104,7 @@ class SwarmRuntime:
         timeout_seconds: int = 3600,
         event_path: Path | None = None,
         resume_id: str | None = None,
+        server_url: str | None = None,
         cwd: Path | None = None,
     ) -> SwarmResult:
         """Run a swarm and normalize its JSON result/event stream.
@@ -136,6 +137,8 @@ class SwarmRuntime:
             command.extend(["--budget-usd", str(budget_usd)])
         if resume_id:
             command.extend(["--resume", resume_id])
+        if server_url:
+            command.extend(["--server", server_url])
         try:
             proc = subprocess.run(
                 command, cwd=effective_cwd, capture_output=True, text=True,
