@@ -1,7 +1,7 @@
 """Machine-readable compact agent report schema (roadmap D-153).
 
-Companion to the human-readable `reports/<TASK_ID>_report.md`: a bounded
-JSON file (`reports/<TASK_ID>_report.json`) carrying the execution-critical
+Companion to the human-readable `reports/tasks/<TASK_ID>_report.md`: a bounded
+JSON file (`reports/tasks/<TASK_ID>_report.json`) carrying the execution-critical
 facts reviewers and manager agents need without parsing Markdown prose.
 
 The schema is deliberately strict:
@@ -21,6 +21,7 @@ import json
 from pathlib import Path
 
 from opencode_crack.orchestrator.report_validator import GIT_STATE_PATTERNS
+from opencode_crack.orchestrator.report_paths import task_report_path
 
 # Canonical vocabulary, in the order agents see them. Reusing
 # report_validator.GIT_STATE_PATTERNS keys keeps one git-state vocabulary
@@ -55,8 +56,8 @@ _LIST_FIELDS = ("files_changed", "tests", "failures", "blockers")
 
 # Default report filename for a task, mirroring the Markdown naming
 # convention (`D-120_report.md` -> `D-120_report.json`).
-def report_json_path(task_id: str, reports_dir: "Path" = Path("reports")) -> Path:
-    return reports_dir / f"{task_id}_report.json"
+def report_json_path(task_id: str, reports_dir: "Path | None" = None) -> Path:
+    return task_report_path(task_id, "json", reports_dir)
 
 
 def build_report(
@@ -147,8 +148,8 @@ def _is_task_id(value) -> bool:
     return re.fullmatch(r"[HDC]-\d{3}", str(value)) is not None
 
 
-def write_report_json(task_id: str, report: dict, reports_dir: "Path" = Path("reports")) -> Path:
-    """Validate and write `reports/<TASK_ID>_report.json`.
+def write_report_json(task_id: str, report: dict, reports_dir: "Path | None" = None) -> Path:
+    """Validate and write `reports/tasks/<TASK_ID>_report.json`.
 
     Raises ValueError listing every problem if the report is invalid —
     invalid structured reports are rejected rather than written, so a

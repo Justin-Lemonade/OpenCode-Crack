@@ -1,7 +1,7 @@
 """Concerns board: an escalation channel for agents to flag process,
 board-integrity, technical, or environment problems to Primary Claude /
 project managers — separate from `delegated_tasks/` (what to build) and
-`reports/<TASK_ID>_report.md` (what was done on one specific task). A
+`reports/tasks/<TASK_ID>_report.md` (what was done on one specific task). A
 concern is for "something about the project itself needs attention," not
 "here's my task output."
 

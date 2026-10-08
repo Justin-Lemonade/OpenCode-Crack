@@ -1,0 +1,10 @@
+diff a/opencode_crack/orchestrator/knowledge_board.py b/opencode_crack/orchestrator/knowledge_board.py	(rejected hunks)
+@@ -113,7 +113,7 @@ def _load_states() -> dict:
+ def _save_states(states: dict) -> None:
+     """The single on-disk writer for knowledge.yaml. Validates every
+     persisted timestamp against the shared contract before writing
+-    anything — see opencode_crack.orchestrator.timestamps and reports/D-263_report.md
++    anything — see opencode_crack.orchestrator.timestamps and reports/tasks/D-263_report.md
+     for why this lives at the writer rather than being trusted by
+     convention."""
+     for knowledge_id, entry in states.items():

@@ -69,7 +69,7 @@ def run_orchestrate(argv: list[str]) -> None:
     p_submit = sub.add_parser("submit", help="Submit finished work for review (does NOT mark done)")
     p_submit.add_argument("task_id")
     p_submit.add_argument("--notes", required=True, help="Summary of what was done")
-    p_submit.add_argument("--report", default=None, help="Path to a written report, e.g. reports/D-007_report.md")
+    p_submit.add_argument("--report", default=None, help="Path to a written report, e.g. reports/tasks/D-007_report.md")
     p_submit.add_argument("--agent", required=True,
                           help="Must be the exact agent string from claim (D-363 ownership)")
 
@@ -119,7 +119,7 @@ def run_orchestrate(argv: list[str]) -> None:
     )
     p_report_json.add_argument("task_id")
     p_report_json.add_argument("--check", action="store_true",
-                               help="Validate an existing reports/<TASK_ID>_report.json instead of writing")
+                               help="Validate an existing reports/tasks/<TASK_ID>_report.json instead of writing")
     p_report_json.add_argument("--outcome", default="submitted",
                                choices=["submitted", "blocked", "released"])
     p_report_json.add_argument("--files", default="", help="Comma-separated list of files changed")

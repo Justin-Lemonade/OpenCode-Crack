@@ -8,7 +8,7 @@ whole-second UTC in `%Y-%m-%dT%H:%M:%SZ` form, because that's what
 fixed one violation of this in `tasks.yaml`; this module exists so the
 fix (validate at the single writer, not "by convention") is written
 once and reused, instead of quietly re-diverging the next time a board
-gets added. See `reports/D-263_report.md` for the original incident.
+gets added. See `reports/tasks/D-263_report.md` for the original incident.
 """
 import re
 from datetime import datetime, timezone

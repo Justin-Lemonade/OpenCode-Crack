@@ -1,0 +1,185 @@
+diff a/opencode_crack/runtime/swarm_runtime.py b/opencode_crack/runtime/swarm_runtime.py	(rejected hunks)
+@@ -162,6 +274,183 @@ class SwarmRuntime:
+             events, raw, error,
+         )
+ 
++    # Terminate a timed-out tree, then recover server-side results.
++    # Bounded: tree-kill plus a fixed reap window; correlation context
++    # (resume/config/event) is threaded through so recovery cannot fall
++    # back to another swarm's row. No second orchestration system is
++    # introduced here — just termination plus a read-only lookup.
++    def _handle_timeout(self, proc, event_path, timeout_seconds, resume_id=None, config_path=None):
++        child_pid = proc.pid
++        _kill_process_tree(child_pid)
++        try:
++            proc.communicate(timeout=_TREE_KILL_REAP_SECONDS)
++        except subprocess.TimeoutExpired:
++            return SwarmResult(
++                None, "timeout",
++                error="swarm run exceeded " + str(timeout_seconds) + "s; pipes still held after tree-kill",
++            )
++        recovered = self._recover_timed_out_swarm(
++            event_path, expected_swarm_id=resume_id, config_path=config_path,
++        )
++        if recovered is not None:
++            return recovered
++        return SwarmResult(None, "timeout", error="swarm run exceeded " + str(timeout_seconds) + "s; tree terminated with no completed swarm")
++
++    # Recover finished work after a supervisor timeout (read-only on the
++    # Swarm DB; the control DB is never touched here, preserving the
++    # separate Swarm DB / control DB architecture).
++    # Correlation order (strongest first):
++    #   1. expected_swarm_id (resume ID): exact row only, never latest.
++    #   2. this invocation's event file: exactly one distinct swarm ID
++    #      observed -> exact row only; zero -> continue; >1 -> ambiguous,
++    #      fail closed (plain timeout).
++    #   3. no strong ID: enumerate completed fully-done candidates. Exactly
++    #      one -> legacy single-swarm recovery (preserves the existing
++    #      completed-after-timeout test). Multiple -> try the config's
++    #      swarm name as a final disambiguator; exactly one name match
++    #      recovers, otherwise fail closed. "Latest completed swarm" is
++    #      never used as a fallback.
++    # Any database problem yields None so the caller reports the plain
++    # timeout. Only a completed swarm whose agents are all done is
++    # recovered; partial state is never presented as finished.
++    def _recover_timed_out_swarm(self, event_path, expected_swarm_id=None, config_path=None):
++        if expected_swarm_id:
++            return self._recover_specific_swarm(expected_swarm_id, event_path)
++        event_ids = _swarm_ids_from_events(event_path)
++        if len(event_ids) == 1:
++            return self._recover_specific_swarm(event_ids[0], event_path)
++        if len(event_ids) > 1:
++            return None
++        try:
++            connection = sqlite3.connect(
++                "file:" + str(self.db_path) + "?mode=ro", uri=True, timeout=5,
++            )
++            try:
++                try:
++                    completed_rows = connection.execute(
++                        "SELECT id, status, name FROM swarms WHERE status = 'completed' ORDER BY updated_at DESC"
++                    ).fetchall()
++                    has_name = True
++                except sqlite3.Error:
++                    completed_rows = connection.execute(
++                        "SELECT id, status FROM swarms WHERE status = 'completed' ORDER BY updated_at DESC"
++                    ).fetchall()
++                    has_name = False
++                if not completed_rows:
++                    return None
++                candidates: list[tuple[str, str | None]] = []
++                for swarm_row in completed_rows:
++                    swarm_id = swarm_row[0]
++                    swarm_name = swarm_row[2] if has_name and len(swarm_row) > 2 else None
++                    agent_rows = connection.execute(
++                        "SELECT swarm_id, name, session_id, status, result, cost_usd "
++                        "FROM agents WHERE swarm_id = ?",
++                        (swarm_id,),
++                    ).fetchall()
++                    if not agent_rows:
++                        continue
++                    pending = 0
++                    for row in agent_rows:
++                        pending = pending + (row[3] != "done")
++                    if pending > 0:
++                        continue
++                    candidates.append((swarm_id, swarm_name))
++                if len(candidates) == 1:
++                    target_id = candidates[0][0]
++                elif len(candidates) > 1:
++                    config_name = _config_swarm_name(config_path)
++                    if not config_name:
++                        return None
++                    named = [swarm_id for swarm_id, swarm_name in candidates if swarm_name == config_name]
++                    if len(named) != 1:
++                        return None
++                    target_id = named[0]
++                else:
++                    return None
++                agent_rows = connection.execute(
++                    "SELECT swarm_id, name, session_id, status, result, cost_usd "
++                    "FROM agents WHERE swarm_id = ?",
++                    (target_id,),
++                ).fetchall()
++            finally:
++                connection.close()
++        except (OSError, sqlite3.Error):
++            return None
++        if not agent_rows:
++            return None
++        pending = 0
++        for row in agent_rows:
++            pending = pending + (row[3] != "done")
++        if pending > 0:
++            return None
++        agents = []
++        for row in agent_rows:
++            one = {}
++            one["swarm_id"] = row[0]
++            one["name"] = row[1]
++            one["session_id"] = row[2]
++            one["status"] = row[3]
++            one["result"] = row[4]
++            one["cost_usd"] = row[5]
++            agents.append(one)
++        raw = {}
++        raw["recovered_after_timeout"] = True
++        raw["swarm_id"] = target_id
++        return SwarmResult(
++            target_id, "completed", agents, list(_read_jsonl(event_path)),
++            raw, None,
++        )
++
++    # Recover one exact swarm row by ID (read-only). Used for resume-ID and
++    # single-event-ID correlation. Returns None unless that exact swarm is
++    # completed with all agents done. Never queries "latest".
++    def _recover_specific_swarm(self, swarm_id, event_path):
++        if not isinstance(swarm_id, str) or not swarm_id:
++            return None
++        try:
++            connection = sqlite3.connect(
++                "file:" + str(self.db_path) + "?mode=ro", uri=True, timeout=5,
++            )
++            try:
++                swarm_row = connection.execute(
++                    "SELECT id, status FROM swarms WHERE id = ?", (swarm_id,),
++                ).fetchone()
++                if swarm_row is None or swarm_row[1] != "completed":
++                    return None
++                agent_rows = connection.execute(
++                    "SELECT swarm_id, name, session_id, status, result, cost_usd "
++                    "FROM agents WHERE swarm_id = ?",
++                    (swarm_row[0],),
++                ).fetchall()
++            finally:
++                connection.close()
++        except (OSError, sqlite3.Error):
++            return None
++        if not agent_rows:
++            return None
++        pending = 0
++        for row in agent_rows:
++            pending = pending + (row[3] != "done")
++        if pending > 0:
++            return None
++        agents = []
++        for row in agent_rows:
++            one = {}
++            one["swarm_id"] = row[0]
++            one["name"] = row[1]
++            one["session_id"] = row[2]
++            one["status"] = row[3]
++            one["result"] = row[4]
++            one["cost_usd"] = row[5]
++            agents.append(one)
++        raw = {}
++        raw["recovered_after_timeout"] = True
++        raw["swarm_id"] = swarm_row[0]
++        return SwarmResult(
++            swarm_row[0], "completed", agents, list(_read_jsonl(event_path)),
++            raw, None,
++        )
++
+     def ingest_events(self, result: SwarmResult) -> int:
+         """Mirror runtime events into AI-Brain's control plane idempotently."""
+         count = 0

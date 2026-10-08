@@ -1,0 +1,12 @@
+diff a/opencode_crack/orchestrator/briefing.py b/opencode_crack/orchestrator/briefing.py	(rejected hunks)
+@@ -43,8 +43,8 @@ ESSENTIAL_RULES = [
+     "Never work a task you have not claimed; never work a task claimed by someone else.",
+     "Worker-side moves need your ownership token: `start`/`submit`/`block`/`release` take `--agent \"<your claim string>\"` (D-363).",
+     "Work one task at a time; submit or block it before claiming the next.",
+-    "Write your report to `reports/<TASK_ID>_report.md` (off-chat evidence).",
+-    "Submit, never complete: `orchestrate submit <TASK_ID> --notes \"...\" --report reports/<TASK_ID>_report.md --agent \"<your claim string>\"`.",
++    "Write your report to `reports/tasks/<TASK_ID>_report.md` (off-chat evidence).",
++    "Submit, never complete: `orchestrate submit <TASK_ID> --notes \"...\" --report reports/tasks/<TASK_ID>_report.md --agent \"<your claim string>\"`.",
+     "Only Primary Claude or a human runs `approve`/`reject`; you cannot mark your own work done.",
+     "Never touch the Delegation rejection list (architecture, security, secrets, permissions).",
+ ]

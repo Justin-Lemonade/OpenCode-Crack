@@ -42,6 +42,7 @@ from opencode_crack.runtime.agent_profile import AgentProfile
 from opencode_crack.runtime.handoff import Handoff, TestRun, handoff_fields
 from opencode_crack.runtime.lease_binding import SessionLeaseBinding, bind_session_to_lease
 from opencode_crack.runtime.lifecycle_record import EvidenceItem, LifecycleRecord, lifecycle_fields
+from opencode_crack.orchestrator.report_paths import task_report_path
 from opencode_crack.runtime.swarm_config import render_swarm_config
 from opencode_crack.runtime.swarm_handoff import build_swarm_handoff
 from opencode_crack.runtime.swarm_normalize import SwarmRunRecord, normalize_swarm_result
@@ -434,7 +435,7 @@ class VerticalSliceHarness:
             session_id=session_id,
             status="approved",
             evidence=[
-                EvidenceItem("artifact", f"reports/{self.task.task_id}_report.md"),
+                EvidenceItem("artifact", task_report_path(self.task.task_id).as_posix()),
                 EvidenceItem("test", "python -m pytest tests/"),
             ],
             notes=success_note,
@@ -446,7 +447,7 @@ class VerticalSliceHarness:
             status="rejected",
             evidence=[
                 EvidenceItem("reason", rejection_reason),
-                EvidenceItem("path", f"reports/{self.task.task_id}_report.md"),
+                EvidenceItem("path", task_report_path(self.task.task_id).as_posix()),
             ],
         )
         return success, rejection

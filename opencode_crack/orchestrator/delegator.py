@@ -196,7 +196,7 @@ have push access, describe the change as a diff/patch in your report instead.
 
 EXPECTED OUTPUT
 ---------------
-Write your report to reports/{task.id}_report.md with:
+Write your report to reports/tasks/{task.id}_report.md with:
 1. Summary
 2. Files changed (as a diff/commit — see SCOPE above for push rules)
 3. Tests run

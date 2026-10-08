@@ -1,7 +1,7 @@
 """
 Deterministic validator for delegated agent reports (roadmap D-085).
 
-Checks that `reports/<TASK_ID>_report.md` contains the sections the
+Checks that `reports/tasks/<TASK_ID>_report.md` contains the sections the
 find-work protocol (step 7) requires: the five-point format (Summary /
 Files changed / Tests run / Failures / Questions & blockers) plus the
 Environment line added in protocol v3.
@@ -121,7 +121,7 @@ def task_id_matches_filename(report_text: str, expected_task_id: str) -> bool:
     """True if the task ID in the report header equals the expected ID.
 
     The expected ID is the one implied by the report's filename
-    (`reports/D-120_report.md` -> "D-120"). Wording-only and
+    (`reports/tasks/D-120_report.md` -> "D-120"). Wording-only and
     deterministic: it never consults git or the task board.
     """
     return report_task_id(report_text) == expected_task_id
@@ -172,7 +172,7 @@ def validate_report(report_path: str | Path) -> list[str]:
 
 def validate_report_id(report_path: str | Path) -> bool:
     """True if the task ID in the report header matches the one implied by
-    its filename (`reports/D-120_report.md` -> "D-120").
+    its filename (`reports/tasks/D-120_report.md` -> "D-120").
 
     Deterministic and file-local: no git, no task board. A report whose
     filename doesn't carry a task ID in the expected position returns False

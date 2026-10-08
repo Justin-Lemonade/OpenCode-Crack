@@ -1,7 +1,7 @@
 ﻿"""Parent-child session contract for the OpenCode serve API (roadmap D-337).
 
 Pure builders, parsers, and classifiers pinning the shapes verified live
-against OpenCode 1.17.18 on 2026-09-23 (see reports/D-337_report.md for the
+against OpenCode 1.17.18 on 2026-09-23 (see reports/tasks/D-337_report.md for the
 full transcript with session and message IDs). No I/O, no credentials, no
 provider calls: the server remains the validator for anything ambiguous,
 and these helpers never reject a shape the server accepts.

@@ -7,7 +7,7 @@ what lessons apply. Every individual source of that story already
 exists and is solid on its own -- the board (`orchestration/tasks.yaml`
 via `task_board.get_task()`), the original task spec
 (`delegated_tasks/<id>.md`), the completion report
-(`reports/<id>_report.md`), git commit history (which consistently
+(`reports/tasks/<id>_report.md`), git commit history (which consistently
 references task ids in commit messages), recorded decisions
 (`src.memory.decisions`), and the knowledge board
 (`knowledge_board.search_relevant()`). Nothing connected them for a
@@ -45,7 +45,7 @@ def _read_task_spec(task_id: str) -> Optional[str]:
 
 def _read_report(report_path: Optional[str]) -> Optional[str]:
     """The completion report, using the board's own report_path field
-    when present rather than re-guessing the reports/<id>_report.md
+    when present rather than re-guessing the reports/tasks/<id>_report.md
     convention -- report_path is what orchestrate submit actually
     wrote, so it is the authoritative pointer."""
     if not report_path:

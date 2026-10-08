@@ -1,0 +1,13 @@
+diff a/opencode_crack/orchestrator/delegator.py b/opencode_crack/orchestrator/delegator.py	(rejected hunks)
+@@ -215,9 +215,9 @@ stop and report back instead of improvising.
+ 
+ END OF SESSION
+ ---------------
+-Once your report is written to reports/{task.id}_report.md, submit it for
++Once your report is written to reports/tasks/{task.id}_report.md, submit it for
+ review — do NOT mark it complete yourself:
+-  orchestrate submit {task.id} --notes "<one-line summary>" --report reports/{task.id}_report.md --agent "<the exact agent string from your claim>"
++  orchestrate submit {task.id} --notes "<one-line summary>" --report reports/tasks/{task.id}_report.md --agent "<the exact agent string from your claim>"
+ If you got stuck instead of finishing:
+   orchestrate block {task.id} --notes "<what's blocking it>" --agent "<the exact agent string from your claim>"
+   orchestrate release {task.id} --notes "<why you stopped>" --agent "<the exact agent string from your claim>"

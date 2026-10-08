@@ -289,7 +289,7 @@ class LaneWorktree:
 
 def _lane_branch_name(session_id: str, task_id: str) -> str:
     # Mirrors opencode-swarm's own naming convention exactly (confirmed
-    # in reports/D-268_report.md: branches named
+    # in reports/tasks/D-268_report.md: branches named
     # `swarm/lane/<session>/<task>`) rather than inventing a parallel
     # scheme -- so a lane resolved here and one provisioned by the
     # external plugin for the same (session, task) land on the same

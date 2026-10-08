@@ -1,0 +1,9 @@
+diff a/opencode_crack/orchestrator/report_schema.py b/opencode_crack/orchestrator/report_schema.py	(rejected hunks)
+@@ -158,6 +159,7 @@ def write_report_json(task_id: str, report: dict, reports_dir: "Path" = Path("re
+     if problems:
+         raise ValueError(f"refusing to write invalid report:\n- " + "\n- ".join(problems))
+     path = report_json_path(task_id, reports_dir)
++    path.parent.mkdir(parents=True, exist_ok=True)
+     path.write_text(
+         json.dumps(report, indent=2, sort_keys=True) + "\n",
+         encoding="utf-8",

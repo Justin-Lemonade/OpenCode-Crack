@@ -148,7 +148,7 @@ def example_handoff(outcome: str) -> Handoff:
                 result="12 passed",
             ),
         ],
-        artifacts=["reports/D-157_report.md"],
+        artifacts=["reports/tasks/D-157_report.md"],
     )
     if outcome == "success":
         return Handoff(
