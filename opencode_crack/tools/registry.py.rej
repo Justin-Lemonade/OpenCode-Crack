@@ -1,23 +1,28 @@
 diff a/opencode_crack/tools/registry.py b/opencode_crack/tools/registry.py	(rejected hunks)
-@@ -193,6 +193,21 @@ def _register_defaults() -> None:
-         side_effect_level="read",
-         handler=lambda query, domain=None: brain.search_memory(query, domain=domain),
-     ))
-+    registry.register(ToolSpec(
-+        name="search_perfect_memory",
-+        description=(
-+            "Search the optional external Perfect Memory store through the "
-+            "AI-Brain-owned MCP boundary (read-only, bounded discovery-first). "
-+            "Returns a structured status dict; never exposes credentials."
-+        ),
-+        schema={"query": "str", "scope": "str | None", "limit": "int | None", "hydrate": "bool | None"},
-+        permissions=["read:external_memory", "network"],
-+        timeout_seconds=60,
-+        side_effect_level="read",
-+        handler=lambda query, scope=None, limit=None, hydrate=None: brain.search_external_memory(
-+            query, scope=scope, limit=limit, hydrate=hydrate
-+        ),
-+    ))
+@@ -248,7 +248,7 @@ def _register_defaults() -> None:
      registry.register(ToolSpec(
-         name="remember",
-         description="Store a structured fact (domain, key, value).",
+         name="search_web",
+         description=(
+-            "Free web search (no API key) via DuckDuckGo HTML + BotBrowser extract — falls back to Brave/Bing. "
++            "Free web search (no API key) via DuckDuckGo HTML + BotBrowser extract — falls back to Brave/Bing/Startpage. "
+             "TIER FIRST: pass tier=quick/standard/deep (how much) before kind/platform — it fans out "
+             "to every kind (standard = web 5, youtube 10, tiktok/ig/fb/x 30, moltbook 30, reddit 20). "
+             "Optionally also queries Moltbook (semantic) + Reddit (with Brave fallback) + social video "
+@@ -468,12 +468,14 @@ def _register_defaults() -> None:
+     registry.register(ToolSpec(
+         name="send_telegram",
+         description=(
+-            "Not yet implemented through the registry — the Telegram bot currently sends "
+-            "messages directly via its own handlers, not through brain/tools."
++            "Send a Telegram message to the user's inbox via the tell CLI "
++            "outbox: `python -m src.main tell \"text\" [--from NAME]`. "
++            "Resolves the inbox from --chat, TELEGRAM_INBOX_CHAT_ID, or the "
++            "allowlist DM. Registry execution is not wired — use the CLI."
+         ),
+         schema={"chat_id": "str", "text": "str"},
+         permissions=["network", "write:telegram"],
+-        timeout_seconds=10,
++        timeout_seconds=30,
+         side_effect_level="write",
+     ))
+     registry.register(ToolSpec(
