@@ -71,4 +71,7 @@ def render_identity_prompt(profile: AgentProfile) -> str:
     if boundary:
         lines.append(f"Boundary: {boundary}")
 
-    return "\n".join(lines)
+    prompt = "\n".join(lines)
+    if memory and memory.strip():
+        prompt += "\n\n" + memory.strip()
+    return prompt

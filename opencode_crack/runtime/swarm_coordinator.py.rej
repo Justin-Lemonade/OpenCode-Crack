@@ -1,0 +1,39 @@
+diff a/opencode_crack/runtime/swarm_coordinator.py b/opencode_crack/runtime/swarm_coordinator.py	(rejected hunks)
+@@ -17,8 +17,9 @@ from pathlib import Path
+ from typing import Iterable
+ 
+ from src.config import SWARM_DB_PATH
++from src.learning import agent_memory
+ from opencode_crack.prompts import get_prompt
+-from opencode_crack.runtime import control_db
++from opencode_crack.runtime import control_db, swarm_resume
+ from opencode_crack.runtime.agent_profile import AgentProfile
+ from opencode_crack.runtime.swarm_runtime import SwarmResult, SwarmRuntime
+ 
+@@ -51,8 +52,13 @@ def build_swarm_config(
+     max_rounds: int = 5,
+     max_concurrent: int | None = None,
+     budget_usd: float | None = None,
++    memory_root: Path | None = None,
+ ) -> dict:
+-    """Build the external Swarm config from AI-Brain's persistent roles."""
++    """Build the external Swarm config from AI-Brain's persistent roles.
++
++    Agents that have a role-memory file (``agentmem init``) get it injected
++    into their prompt, so a stopped swarm resumes with its knowledge intact.
++    Agents without one are unchanged."""
+     profile_list = list(profiles)
+     if not profile_list:
+         raise ValueError("At least one registered agent is required")
+@@ -155,6 +200,11 @@ def _agent_prompt(
+         lines.append(f"Working style: {profile.personality}")
+     if profile.notes:
+         lines.append(f"Persistent notes: {profile.notes}")
++    memory_block = agent_memory.render_memory_block(
++        profile.agent_id, memory_root, ledger_tail=5,
++    )
++    if memory_block:
++        lines.append(memory_block)
+     if task_id:
+         lines.append(f"AI-Brain task id: {task_id}")
+     if task_prompt:

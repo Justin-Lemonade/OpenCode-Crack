@@ -1,0 +1,20 @@
+diff a/opencode_crack/runtime/identity_prompt.py b/opencode_crack/runtime/identity_prompt.py	(rejected hunks)
+@@ -43,12 +43,17 @@ def identity_fields(profile: AgentProfile) -> dict:
+     return fields
+ 
+ 
+-def render_identity_prompt(profile: AgentProfile) -> str:
++def render_identity_prompt(profile: AgentProfile, memory: str | None = None) -> str:
+     """Render a compact, deterministic identity prompt for a new session.
+ 
+     Personality and role each appear exactly once. Empty optional fields
+     produce no line. The D-155 role context (responsibilities and escalation
+     boundary) is appended when the profile's role has a fixture.
++
++    ``memory`` is optional, pre-rendered role memory (see
++    ``src.learning.agent_memory.render_memory_block``). The caller supplies
++    it so this function stays pure (no I/O). When omitted or blank the
++    output is byte-identical to before.
+     """
+     lines = [
+         f"You are {profile.agent_id}, the {profile.role} in the AI Brain multi-agent system.",

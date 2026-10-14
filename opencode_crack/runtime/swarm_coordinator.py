@@ -68,7 +68,7 @@ def build_swarm_config(
     roster_text = json.dumps(roster, separators=(",", ":"))
     agents = []
     for profile in profile_list:
-        task = _agent_prompt(profile, roster_text, task_id, task_prompt)
+        task = _agent_prompt(profile, roster_text, task_id, task_prompt, memory_root)
         agents.append(
             {
                 "name": profile.agent_id,
@@ -108,8 +108,15 @@ def launch(
     budget_usd: float | None = None,
     runtime: SwarmRuntime | None = None,
     timeout_seconds: int = 3600,
+    resume_id: str | None = None,
+    memory_root: Path | None = None,
 ) -> tuple[SwarmLaunch, SwarmResult]:
-    """Create a role-aware swarm, run it, and mirror events into control.db."""
+    """Create a role-aware swarm, run it, and mirror events into control.db.
+
+    ``resume_id`` continues an earlier swarm (``swarm run --resume``). After
+    every run, including a timed-out or failed one, agents that have role
+    memory get a ``Last swarm run`` checkpoint so the run can be resumed
+    later (see ``resume`` and ``opencode_crack/runtime/swarm_resume.py``)."""
     profile_list = list(profiles)
     for profile in profile_list:
         control_db.register_agent(profile)
@@ -121,17 +128,48 @@ def launch(
         max_rounds=max_rounds,
         max_concurrent=max_concurrent,
         budget_usd=budget_usd,
+        memory_root=memory_root,
     )
     write_swarm_config(config, config_path)
     runner = runtime or SwarmRuntime(db_path=SWARM_DB_PATH)
-    result = runner.run(
-        config_path,
+    run_kwargs = dict(
         max_concurrent=max_concurrent,
         budget_usd=budget_usd,
         timeout_seconds=timeout_seconds,
     )
+    if resume_id:  # only passed when set, so existing runtimes see no new kwarg
+        run_kwargs["resume_id"] = resume_id
+    result = runner.run(config_path, **run_kwargs)
     runner.ingest_events(result)
-    return SwarmLaunch(config_path, tuple(p.agent_id for p in profile_list), task_id), result
+    agent_ids = tuple(p.agent_id for p in profile_list)
+    swarm_resume.checkpoint_swarm(result, agent_ids, task_id=task_id, root=memory_root)
+    return SwarmLaunch(config_path, agent_ids, task_id), result
+
+
+def resume(
+    profiles: Iterable[AgentProfile],
+    *,
+    config_path: Path,
+    resume_id: str | None = None,
+    **launch_kwargs,
+) -> tuple[SwarmLaunch, SwarmResult]:
+    """Resume a stopped swarm with agent memory intact.
+
+    The swarm id comes from ``resume_id`` or, when omitted, from the most
+    recent unfinished ``Last swarm run`` checkpoint among these agents. The
+    config is rebuilt, so every agent's prompt carries its latest memory.
+    Raises ValueError when there is nothing to resume.
+    """
+    profile_list = list(profiles)
+    rid = resume_id or swarm_resume.find_resume_id(
+        [p.agent_id for p in profile_list], launch_kwargs.get("memory_root"),
+    )
+    if not rid:
+        raise ValueError(
+            "nothing to resume: no unfinished swarm run is recorded in agent memory; "
+            "pass resume_id explicitly to override"
+        )
+    return launch(profile_list, config_path=config_path, resume_id=rid, **launch_kwargs)
 
 
 def _agent_prompt(
@@ -139,6 +177,7 @@ def _agent_prompt(
     roster_text: str,
     task_id: str | None,
     task_prompt: str | None,
+    memory_root: Path | None = None,
 ) -> str:
     role_context = profile.role_context(profile.role)
     lines = [
