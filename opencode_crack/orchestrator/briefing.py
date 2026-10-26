@@ -6,7 +6,7 @@ start picking a task without re-reading AGENTS.md + find_work.md + STATUS.md
 in full. It contains only:
 
     - the current queue summary (counts per status),
-    - the top eligible D-tier tasks (open, highest priority first),
+    - the top open D-tier candidates (not claim-ready until further checks),
     - the essential claim/submit/review workflow rules (short),
     - pointers to the full protocol documents (not reproduced).
 
@@ -82,10 +82,22 @@ def briefing_fields(tasks: list[Task]) -> dict:
             "blocked": len(by_status.get("blocked", [])),
             "done": len(by_status.get("done", [])),
         },
+        # New canonical name is deliberately not "eligible": runtime and
+        # human-gate checks are deliberately not executed in this fast briefing.
+        "top_open_delegate_candidates": [
+            {"task_id": t.id, "priority": t.priority, "title": t.title}
+            for t in top_delegate
+        ],
+        # Compatibility alias for older JSON consumers. Deprecation warning
+        # is explicit so callers can migrate instead of assuming readiness.
         "top_eligible_tasks": [
             {"task_id": t.id, "priority": t.priority, "title": t.title}
             for t in top_delegate
         ],
+        "eligibility_notice": (
+            "top_eligible_tasks is a deprecated alias, NOT verified eligible; "
+            "run orchestrate eligibility --json before a claim"
+        ),
         "essential_rules": ESSENTIAL_RULES,
         "protocol_pointers": PROTOCOL_POINTERS,
     }
@@ -101,16 +113,23 @@ def build_briefing(tasks: list[Task]) -> str:
         f"Queue: {q['total']} tasks — {q['done']} done, {q['review']} review, "
         f"{q['active']} active, {q['blocked']} blocked, {q['open']} open",
         "",
-        "## Top eligible D-tier tasks",
+        "## Top open D-tier candidates (not yet verified eligible)",
     ]
-    if f["top_eligible_tasks"]:
+    if f["top_open_delegate_candidates"]:
         lines += [
             f"- {t['task_id']} ({t['priority']}) — {t['title']}"
-            for t in f["top_eligible_tasks"]
+            for t in f["top_open_delegate_candidates"]
         ]
     else:
         lines.append("- (none open)")
-    lines += ["", "## Essential workflow rules"]
+    lines += [
+        "",
+        "Eligibility is NOT verified by open/delegate status alone. Check task",
+        "dependencies, human gates, runtime fit and supersession before claiming.",
+        "Run: orchestrate eligibility --json",
+        "",
+        "## Essential workflow rules",
+    ]
     lines += [f"- {rule}" for rule in f["essential_rules"]]
     lines += ["", "## Full protocol documents (see these for detail)"]
     lines += [f"- {name}: {desc}" for name, desc in f["protocol_pointers"].items()]

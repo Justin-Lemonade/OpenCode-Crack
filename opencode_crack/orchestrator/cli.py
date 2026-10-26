@@ -57,6 +57,12 @@ def run_orchestrate(argv: list[str]) -> None:
     )
     p_briefing.add_argument("--json", action="store_true", help="Print the briefing as JSON")
 
+    p_eligibility = sub.add_parser(
+        "eligibility", help="Explain static board/spec exclusions before a task is claimed"
+    )
+    p_eligibility.add_argument("--json", action="store_true", help="Machine-readable diagnostics")
+    p_eligibility.add_argument("--all", action="store_true", help="Also include non-open and non-delegate tasks")
+
     p_claim = sub.add_parser("claim", help="Claim a task for an agent")
     p_claim.add_argument("task_id")
     p_claim.add_argument("--agent", required=True, help="Name identifying the claiming agent")
@@ -331,6 +337,24 @@ def run_orchestrate(argv: list[str]) -> None:
         from opencode_crack.orchestrator.briefing import build_briefing, build_briefing_json
         tasks = task_board.list_tasks()
         print(build_briefing_json(tasks) if args.json else build_briefing(tasks))
+
+    elif args.action == "eligibility":
+        import json
+        from opencode_crack.orchestrator.eligibility import eligibility_report
+        report = eligibility_report(task_board.list_tasks())
+        if not args.all:
+            report["tasks"] = [r for r in report["tasks"] if r["board_candidate"]]
+        if args.json:
+            print(json.dumps(report, indent=2, sort_keys=True))
+        else:
+            print(report["disclaimer"])
+            print("Open D-tier candidates:", report["counts"]["board_open_delegate"])
+            for row in report["tasks"]:
+                blockers = row["static_blockers"]
+                why = ", ".join(blockers) if blockers else "preflight required"
+                print(f'{row["task_id"]} ({row["priority"]}): {why}')
+                if row["warnings"]:
+                    print("  Warnings: " + ", ".join(row["warnings"]))
 
     elif args.action == "claim":
         try:

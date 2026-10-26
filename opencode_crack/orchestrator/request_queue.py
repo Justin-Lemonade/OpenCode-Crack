@@ -153,8 +153,21 @@ def _archive(path: Path, request: dict[str, Any]) -> None:
 
 
 def process_inbox() -> int:
-    """Process all inbox requests sequentially. Returns the number applied."""
+    """Process inbox requests; refuse to silently ignore abandoned reservations.
+
+    Never replay files from processing/ automatically: a cancelled runner may
+    have already applied a request but not yet archived it. An operator must
+    compare the authoritative task state before choosing a safe recovery.
+    """
     INBOX.mkdir(parents=True, exist_ok=True)
+    stale = sorted([*PROCESSING.glob("*.yaml"), *PROCESSING.glob("*.yml")])
+    if stale:
+        names = ", ".join(path.name for path in stale)
+        raise RuntimeError(
+            "Reserved request(s) need operator reconciliation in processing/: "
+            + names + ". Check canonical task state and activity.log before "
+            "requeueing or archiving; never auto-replay."
+        )
     files = sorted([*INBOX.glob("*.yaml"), *INBOX.glob("*.yml")])
     applied = 0
     for path in files:
