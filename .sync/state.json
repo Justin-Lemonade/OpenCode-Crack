@@ -7,6 +7,10 @@
       "branch": "sync/ai-brain-to-occ-c5fe535203",
       "head_sha": "c5fe535203cb872c578b4f31af706b0e4e4887c7"
     },
-    "occ-to-ai-brain": null
+    "occ-to-ai-brain": {
+      "pr_number": 71,
+      "branch": "sync/occ-to-ai-brain-d07f855651",
+      "head_sha": "d07f85565158fe985b8db747d85cf29969be143d"
+    }
   }
 }
