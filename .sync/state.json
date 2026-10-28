@@ -1,12 +1,8 @@
 {
-  "ai_brain_synced_sha": "d77f3c476acdde26e71d9d5cd351a65fd1ecd3bf",
+  "ai_brain_synced_sha": "c5fe535203cb872c578b4f31af706b0e4e4887c7",
   "occ_synced_sha": "2099d0adafae4de328885f56366b2db2fb0031c1",
   "pending": {
-    "ai-brain-to-occ": {
-      "pr_number": 14,
-      "branch": "sync/ai-brain-to-occ-c5fe535203",
-      "head_sha": "c5fe535203cb872c578b4f31af706b0e4e4887c7"
-    },
+    "ai-brain-to-occ": null,
     "occ-to-ai-brain": {
       "pr_number": 71,
       "branch": "sync/occ-to-ai-brain-d07f855651",
