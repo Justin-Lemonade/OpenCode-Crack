@@ -3,10 +3,6 @@
   "occ_synced_sha": "2099d0adafae4de328885f56366b2db2fb0031c1",
   "pending": {
     "ai-brain-to-occ": null,
-    "occ-to-ai-brain": {
-      "pr_number": 71,
-      "branch": "sync/occ-to-ai-brain-d07f855651",
-      "head_sha": "d07f85565158fe985b8db747d85cf29969be143d"
-    }
+    "occ-to-ai-brain": null
   }
 }
