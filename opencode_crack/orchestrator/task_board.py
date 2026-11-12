@@ -49,6 +49,22 @@ silently allowed, and every transition logs both the recorded owner and
 the acting SESSION_ID, so impersonation is detectable after the fact.
 Shared git authorship is never treated as identity.
 
+Serialization normalization (null ownership)
+--------------------------------------------
+`sync()` writes every state row but omits any key whose value is `None`,
+so `owner` and `owner_session` are simply absent on unowned rows instead of
+being stored as explicit `null`. This is intentional: a key-less row is
+recognizably "legacy / no owner", while an explicit `owner: null` would be
+indistinguishable from one and would churn all 400+ rows with nulls on every
+publish.
+
+The four rows that lost their explicit `owner: null` / `owner_session: null`
+keys in commit 0e5f2fd6 (D-305, D-307, D-334, D-343) are all `open` with
+`assignee: None`. Ownership semantics are unchanged: `_owner_of()` falls back
+from `owner` to `assignee` and returns `None` for them both before and after,
+and `_require_owner()` still raises "no assignee" for any move. Behavior is
+identical; only the on-disk spelling of "no owner" changed.
+
 Publication outcomes (D-362)
 ----------------------------
 Every claim, start, submit, block, release, approve, reject, and complete
@@ -269,13 +285,59 @@ def _run_git(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], capture_output=True, text=True)
 
 
-def _load_states() -> dict:
-    """Read raw state dict from tasks.yaml. Empty dict if file is new."""
-    if not BOARD_PATH.exists():
+def _load_states(path: "Optional[Path]" = None) -> dict:
+    """Read raw state dict from tasks.yaml. Empty dict if file is new.
+
+    `path` overrides BOARD_PATH for read-only callers (e.g. validating a
+    board file that is not the active one); all mutations use the default.
+    """
+    board_path = Path(path) if path is not None else BOARD_PATH
+    if not board_path.exists():
         return {}
-    with open(BOARD_PATH, "r", encoding="utf-8") as f:
+    with open(board_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return data or {}
+
+
+def load_states(path: "Optional[Path]" = None) -> dict:
+    """Public, read-only view of the persisted `tasks.yaml` rows.
+
+    `board_validation` (and any future read-only audit) needs the raw state
+    mapping without going through `_merge_tasks()`, which silently replaces a
+    missing row with a default `TaskState()` and so cannot reveal a missing
+    or orphaned entry.
+    """
+    return _load_states(path)
+
+
+def _backfill_roadmap_tasks(states: dict) -> dict:
+    """Return `states` plus a default 'open' row for every roadmap task that
+    has no row yet. Used by every mutation path before `_save_states`.
+
+    Why this exists: `_merge_tasks()` derives the rendered board (STATUS.md,
+    `list`) from the roadmap, but mutations used to persist only the rows
+    they found in tasks.yaml. A task added to the roadmap / delegated_tasks
+    between two mutations was therefore counted by the status generator and
+    absent from the state file, so `STATUS.md` totals and `tasks.yaml` row
+    counts disagreed until the next `sync()`. Publishing through here makes
+    a mutation write exactly the ID set the generator just counted.
+
+    Only ADDS missing rows. Dropping IDs the roadmap no longer defines stays
+    `sync()`'s job: that is a deliberate, explicit publish, whereas a claim
+    should never silently delete an unrelated row.
+    """
+    backfilled = dict(states)
+    for rt in parse_roadmap():
+        if rt.id not in backfilled:
+            backfilled[rt.id] = {
+                "status": "open",
+                "assignee": None,
+                "claimed_at": None,
+                "updated_at": None,
+                "notes": "",
+                "report_path": None,
+            }
+    return backfilled
 
 
 def _save_states(states: dict) -> None:
@@ -312,10 +374,13 @@ def _merge_tasks() -> list[Task]:
 def sync() -> list[Task]:
     """Re-derive the task list AND persist it: writes tasks.yaml (dropping
     IDs the roadmap no longer defines, adding new ones as 'open') and
-    regenerates STATUS.md. This is the only function that writes — call it
-    when you actually intend to publish a change (claim/release/complete/
-    etc. already do). Reads (list_tasks/get_task) use _merge_tasks() instead
-    so simply looking at the board never creates a spurious local diff."""
+    regenerates STATUS.md. All task-state writes pass through _save_states().
+    Mutating transitions also call that writer directly after validating the
+    transition; they backfill newly parsed roadmap IDs before saving so the
+    state file cannot remain shorter than the rendered board after a mutation.
+    This explicit sync is the full reconciliation path: it also drops IDs no
+    longer present in the parsed roadmap. Reads (list_tasks/get_task) use
+    _merge_tasks() and never write generated state."""
     merged = _merge_tasks()
 
     new_states = {}
@@ -365,19 +430,21 @@ def get_task(task_id: str) -> Optional[Task]:
 
 
 _TASK_REF_RE = re.compile(r"[HDC]-\d{3}")
+_DEPENDENCY_LINE_RE = re.compile(r"(?im)^\s*\*\*Depends[- ]on:\*\*\s*([^\n]+)")
 
 
 def get_next_task() -> Optional[Task]:
     """Return the best open delegate task per the find_work selection policy.
 
     Selection order:
-    1. Tasks with feedback (non-empty notes from prior review) first.
-    2. Among those, tasks that unblock the most other open tasks first.
+    1. Tasks with an explicit rejection marker in review notes first.
+    2. Among those, tasks named in other open tasks' explicit Depends-on metadata first.
     3. Then by priority label (CRITICAL > HIGH > MEDIUM-HIGH > MEDIUM > LOW-MEDIUM > LOW).
     4. Finally by task ID to keep the result deterministic.
     """
     tasks = _merge_tasks()
     open_delegate = [t for t in tasks if t.tier == "delegate" and t.state.status == "open"]
+    open_tasks = [t for t in tasks if t.state.status == "open"]
     if not open_delegate:
         return None
 
@@ -393,19 +460,24 @@ def get_next_task() -> Optional[Task]:
     candidate_ids = {t.id for t in open_delegate}
     dependency_counts: dict[str, int] = {t.id: 0 for t in open_delegate}
 
-    for t in open_delegate:
+    for t in open_tasks:
         try:
             from opencode_crack.orchestrator.task_parser import get_section_text
             section = get_section_text(t.id)
-            refs = set(_TASK_REF_RE.findall(section))
+            dependency_line = _DEPENDENCY_LINE_RE.search(section)
+            refs = set(_TASK_REF_RE.findall(dependency_line.group(1))) if dependency_line else set()
             for ref in refs:
                 if ref in candidate_ids:
                     dependency_counts[ref] += 1
-        except ValueError:
+        except (ValueError, OSError):
             pass
 
+    # Import lazily: eligibility imports task_board for its task model and
+    # status constants. At call time this module is fully initialized.
+    from opencode_crack.orchestrator.eligibility import has_explicit_rejection_feedback
+
     def _sort_key(t: Task):
-        has_feedback = 1 if (t.state.notes and t.state.notes.strip()) else 0
+        has_feedback = 1 if has_explicit_rejection_feedback(t.state.notes) else 0
         unblocks = dependency_counts.get(t.id, 0)
         priority = priority_order.get(t.priority, 9)
         return (-has_feedback, -unblocks, priority, t.id)
@@ -522,7 +594,7 @@ def claim_task(task_id: str, agent: str) -> Task:
         "owner": agent,
         "owner_session": SESSION_ID,
     }
-    _save_states(states)
+    _save_states(_backfill_roadmap_tasks(states))
     _write_status(_merge_tasks())
     _append_activity(f"{task_id}  {task.state.status} -> claimed  {agent}  owner={agent}  actor_session={SESSION_ID}")
 
@@ -668,7 +740,7 @@ def _update_status(task_id: str, status: str, notes: str = "", clear_assignee: b
         existing["owner"] = existing.get("assignee")
         existing["owner_session"] = SESSION_ID
     states[task_id] = existing
-    _save_states(states)
+    _save_states(_backfill_roadmap_tasks(states))
     _write_status(_merge_tasks())
     _append_activity(
         f"{task_id}  {prev_status} -> {status}"

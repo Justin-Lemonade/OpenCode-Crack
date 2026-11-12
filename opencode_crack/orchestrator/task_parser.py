@@ -56,6 +56,16 @@ def _documents(path: "Path | None" = None) -> list[Path]:
     return [ROADMAP_PATH, *extensions]
 
 
+def documents(path: "Path | None" = None) -> list[Path]:
+    """Public accessor for the ordered roadmap-document list.
+
+    Read-only checks (e.g. `board_validation`) need exactly the document set
+    `parse_roadmap()` reads — the main roadmap plus the delegated extension
+    files — without re-deriving the directory layout themselves.
+    """
+    return _documents(path)
+
+
 def _parse_document(path: Path) -> list[RoadmapTask]:
     text = path.read_text(encoding="utf-8")
     headers = list(HEADER_RE.finditer(text))

@@ -52,6 +52,17 @@ def run_orchestrate(argv: list[str]) -> None:
 
     sub.add_parser("status", help="Print the STATUS.md dashboard (what's active, stale, blocked, left)")
 
+    p_validate = sub.add_parser(
+        "validate",
+        help="Check that roadmap definitions and tasks.yaml rows define the same task IDs",
+    )
+    p_validate.add_argument("--json", action="store_true", help="Machine-readable issue list")
+
+    sub.add_parser(
+        "git-sync",
+        help="Fetch and rebase the current branch onto its single configured upstream",
+    )
+
     p_briefing = sub.add_parser(
         "briefing", help="Print a compact startup briefing for delegated agents"
     )
@@ -322,7 +333,16 @@ def run_orchestrate(argv: list[str]) -> None:
 
     args = parser.parse_args(argv)
 
-    if args.action == "list":
+    if args.action == "git-sync":
+        from opencode_crack.orchestrator.git_sync import GitSyncError, sync_current_branch
+        try:
+            result = sync_current_branch()
+        except GitSyncError as exc:
+            print(f"Could not sync current branch: {exc}", file=sys.stderr)
+            sys.exit(1)
+        print(f"Synced {result.branch} onto {result.upstream}.")
+
+    elif args.action == "list":
         tasks = task_board.list_tasks(tier=args.tier, status=args.status)
         for t in tasks:
             _print_task(t)
@@ -332,6 +352,24 @@ def run_orchestrate(argv: list[str]) -> None:
         from opencode_crack.orchestrator.status_report import render_markdown
         tasks = task_board.list_tasks()
         print(render_markdown(tasks))
+
+    elif args.action == "validate":
+        from opencode_crack.orchestrator import board_validation
+        issues = board_validation.validate_board()
+        if args.json:
+            import json
+            print(json.dumps(
+                [{"kind": i.kind, "subject": i.subject, "detail": i.detail} for i in issues],
+                indent=2,
+            ))
+        elif not issues:
+            print("Board validation passed: roadmap definitions and tasks.yaml rows match.")
+        else:
+            for issue in issues:
+                print(issue)
+            print(f"\n{len(issues)} issue(s)")
+        if issues:
+            sys.exit(1)
 
     elif args.action == "briefing":
         from opencode_crack.orchestrator.briefing import build_briefing, build_briefing_json
