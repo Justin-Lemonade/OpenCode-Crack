@@ -15,9 +15,10 @@ The task board has two halves that must describe exactly the same task IDs:
 
 ``STATUS.md`` is rendered from the definitions, so any ID that exists in one
 half and not the other makes the dashboard and the state file disagree. That
-is exactly the divergence repaired on this branch: ``STATUS.md`` reported 482
-tasks while ``tasks.yaml`` held 471 rows, because mutations persisted only the
-rows they found and never materialized newly added definitions.
+is exactly the divergence repaired by PR #74 (merged into ``main`` on
+2026-11-12): ``STATUS.md`` reported 482 tasks while ``tasks.yaml`` held 471
+rows, because mutations persisted only the rows they found and never
+materialized newly added definitions.
 
 This module reports every violation of
 
