@@ -121,11 +121,12 @@ class ToolRegistry:
     def call(self, name: str, **kwargs):
         """Execute a tool by name.
 
-        No permission policy exists yet (C-007), so this enforces the
-        conservative interim rule described in the module docstring:
-        refuse anything without a wired handler. That's currently the
-        only thing standing between "declared in the catalog" and
-        "actually dangerous to let a model run".
+        This is the low-level dispatcher, not the permission-aware entry
+        point. It rejects declarations without a handler and validates
+        argument types, then invokes the handler. It does NOT evaluate
+        side-effect level or agent permissions and does NOT create approval
+        records. Model/agent callers must use `execute_tool()` from
+        `opencode_crack.tools.permissions` (normally via `brain.run_tool()`).
 
         Kwarg types are validated against each tool's declared schema
         (D-027) before the handler runs, so wrong-typed arguments fail

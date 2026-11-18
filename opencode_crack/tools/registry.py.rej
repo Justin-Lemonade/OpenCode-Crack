@@ -1,28 +1,43 @@
 diff a/opencode_crack/tools/registry.py b/opencode_crack/tools/registry.py	(rejected hunks)
-@@ -248,7 +248,7 @@ def _register_defaults() -> None:
-     registry.register(ToolSpec(
-         name="search_web",
-         description=(
--            "Free web search (no API key) via DuckDuckGo HTML + BotBrowser extract — falls back to Brave/Bing. "
-+            "Free web search (no API key) via DuckDuckGo HTML + BotBrowser extract — falls back to Brave/Bing/Startpage. "
-             "TIER FIRST: pass tier=quick/standard/deep (how much) before kind/platform — it fans out "
-             "to every kind (standard = web 5, youtube 10, tiktok/ig/fb/x 30, moltbook 30, reddit 20). "
-             "Optionally also queries Moltbook (semantic) + Reddit (with Brave fallback) + social video "
-@@ -468,12 +468,14 @@ def _register_defaults() -> None:
-     registry.register(ToolSpec(
-         name="send_telegram",
-         description=(
--            "Not yet implemented through the registry — the Telegram bot currently sends "
--            "messages directly via its own handlers, not through brain/tools."
-+            "Send a Telegram message to the user's inbox via the tell CLI "
-+            "outbox: `python -m src.main tell \"text\" [--from NAME]`. "
-+            "Resolves the inbox from --chat, TELEGRAM_INBOX_CHAT_ID, or the "
-+            "allowlist DM. Registry execution is not wired — use the CLI."
-         ),
-         schema={"chat_id": "str", "text": "str"},
-         permissions=["network", "write:telegram"],
--        timeout_seconds=10,
-+        timeout_seconds=30,
-         side_effect_level="write",
-     ))
+@@ -16,17 +16,13 @@ Each ToolSpec declares:
+     supported_agents   which kinds of agent may call this (default ["any"])
+     handler            the actual callable, or None if not implemented yet
+ 
+-IMPORTANT — this registry does NOT itself enforce a permission policy.
+-That's roadmap C-007 (permission-aware tool execution), which doesn't
+-exist yet: "Never allow the model to directly decide which
+-shell/file/network operations are acceptable" is C-007's job, not this
+-module's. Until C-007 lands, ToolRegistry.call() refuses to run any
+-tool with no wired handler — see call() below — so handing this
+-registry to a model can't accidentally grant shell/filesystem/network
+-access before a real permission layer exists. Tools that already have
+-a safe, working handler (remember, ingest_document, search_memory,
+-export) run today because that's exactly how the CLI already exposes
+-them, unguarded, and this doesn't change that.
++IMPORTANT — this registry is a catalog and dispatcher, not the permission
++policy. C-007 is implemented in `opencode_crack/tools/permissions.py`.
++`ToolRegistry.call()` validates a tool's argument schema and invokes its
++handler, but does not evaluate permissions, enforce agent scope, apply the
++executor timeout, or record the approval/audit state. Model/agent callers
++must use `execute_tool()` (or `brain.run_tool()`), never call this method
++directly. A tool with `handler=None` is only declared and cannot run.
+ """
+ from __future__ import annotations
+ 
+@@ -165,11 +162,11 @@ registry = ToolRegistry()
+ 
+ 
+ def _register_defaults() -> None:
+-    """Register every tool named in the roadmap's C-006 list. Tools
+-    backed by working code (via brain.py) get a real handler; the rest
+-    are declared with handler=None, so the registry is a complete,
+-    honest map of "what the brain should eventually do" even before
+-    the riskier half of it is safe to execute (C-007)."""
++    """Register the tool catalog. Entries with working implementations
++    receive handlers; planned capabilities remain declared with
++    handler=None. C-007 permission checks live outside this registry in
++    `opencode_crack.tools.permissions.execute_tool()` and must be applied by callers
++    before a model-controlled tool is executed."""
+     from opencode_crack import brain
+ 
      registry.register(ToolSpec(
